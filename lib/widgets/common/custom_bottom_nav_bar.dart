@@ -14,7 +14,7 @@ class CustomBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 75,
+      height: 65,
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -25,12 +25,12 @@ class CustomBottomNavBar extends StatelessWidget {
             AppColors.primary,
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -81,12 +81,13 @@ class CustomBottomNavBar extends StatelessWidget {
             Icon(
               icon,
               color: isActive ? Colors.white : Colors.white.withOpacity(0.7),
-              size: 26,
+              size: 24,
             ),
             const SizedBox(height: 4),
             Text(
               label,
-              style: AppTextStyles.bodySmall.copyWith(
+              style: TextStyle(
+                fontSize: 11,
                 color: isActive ? Colors.white : Colors.white.withOpacity(0.7),
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
               ),
