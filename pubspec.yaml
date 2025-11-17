@@ -1,4 +1,4 @@
-name: agrilink_app
+name: agri_link
 description: "AgriLink Mobile Application"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -41,6 +41,7 @@ dependencies:
   google_maps_flutter: ^2.14.0
   provider: ^6.1.5+1
   geolocator: ^14.0.2
+  google_fonts: ^6.3.2
 
 
 dev_dependencies:
@@ -52,7 +53,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -68,6 +69,28 @@ flutter:
     - assets/images/fruits/
     - assets/images/vegetables/
     - assets/icons/
+    - assets/images/splash/
+    - assets/images/onboarding/
+
+  # Fonts (bundle exact font files into the app for pixel-consistent typography)
+  # Add the TTF files to the `assets/fonts/` folder (not included here).
+  # Recommended files to add:
+  #  - assets/fonts/Poppins-Regular.ttf
+  #  - assets/fonts/Poppins-Medium.ttf
+  #  - assets/fonts/Poppins-SemiBold.ttf
+  #  - assets/fonts/LilitaOne-Regular.ttf
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+    - family: LilitaOne
+      fonts:
+        - asset: assets/fonts/LilitaOne-Regular.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:
