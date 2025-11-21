@@ -1,14 +1,17 @@
 class AppRoutes {
+  // General
   static const String splash = '/';
-  static const String welcome = '/welcome';  // Added for teammate's new welcome screen
+  static const String welcome = '/welcome';
   static const String onboarding = '/onboarding';
-  static const String homeSelector = '/homeSelector';  // Will be replaced with new role selection UI
-  
-  // Auth Routes
+  static const String homeSelector = '/homeSelector';
+
+  // Auth
   static const String login = '/login';
+  static const String password = '/password';
   static const String register = '/register';
-  
-  // Farmer Routes
+  static const String roleSelection = '/roleSelection';
+
+  // Farmer
   static const String farmerHome = '/farmerHome';
   static const String selectCategory = '/selectCategory';
   static const String addFruit = '/addFruit';
@@ -16,8 +19,8 @@ class AppRoutes {
   static const String manageFruitStock = '/manageFruitStock';
   static const String manageVegetableStock = '/manageVegetableStock';
   static const String farmerOrders = '/farmerOrders';
-  
-  // Buyer Routes
+
+  // Buyer
   static const String buyerHome = '/buyerHome';
   static const String fruits = '/fruits';
   static const String fruitsList = '/fruitsList';
@@ -37,9 +40,11 @@ class AppRoutes {
   static const String trackOrder = '/trackOrder';
   static const String cart = '/cart';
   static const String buyerOrders = '/buyerOrders';
+<<<<<<< HEAD
+  static const String favorites = '/favorites';
   static const String favorites = '/favorites';
   
-  // Delivery Routes
+  // Delivery
   static const String deliveryHome = '/deliveryHome';
   static const String deliveryOrderList = '/deliveryOrderList';
   static const String deliveryMap = '/deliveryMap';

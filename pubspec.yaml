@@ -42,8 +42,6 @@ dependencies:
   provider: ^6.1.5+1
   geolocator: ^14.0.2
   google_fonts: ^6.3.2
-  image_picker: ^1.1.2
-  intl: ^0.19.0
 
 
 dev_dependencies:
@@ -68,15 +66,6 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assets/images/fruits/
-    - assets/images/vegetables/
-    - assets/images/buyer/
-    - assets/images/buyer/carousel/
-    - assets/images/buyer/fruits/
-    - assets/images/buyer/vegetables/
-    - assets/images/buyer/farmers/
-    - assets/images/buyer/profile/
-    - assets/icons/
     - assets/images/splash/
     - assets/images/onboarding/
 

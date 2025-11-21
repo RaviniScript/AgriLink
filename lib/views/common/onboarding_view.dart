@@ -1,7 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:agri_link/core/constants/app_themes.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:agri_link/routes/app_routes.dart';
+import 'package:google_fonts/google_fonts.dart'; 
+
+class AppThemes {
+  AppThemes._();
+  static const Color primaryGreen = Color(0xFF609400); // Main Green
+  static const Color backgroundCream = Color(0xFFFFFDE8); // Cream Background
+  static const Color neutralDark = Color(0xFF333333); // Main text
+  
+  static final ThemeData lightTheme = ThemeData(
+    primaryColor: primaryGreen,
+    scaffoldBackgroundColor: backgroundCream,
+    fontFamily: 'Poppins', 
+  );
+}
+
+class AppRoutes {
+  // Mock routes needed for navigation calls
+  static const String login = '/login'; 
+  // FIX: Added the welcome route constant to navigate to WelcomeView
+  static const String welcome = '/welcome'; 
+  static const String homeSelector = '/homeSelector'; 
+}
+
+class MockView extends StatelessWidget {
+  final String title;
+  const MockView({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(child: Text('$title Placeholder View')),
+    );
+  }
+}
+
+class _OnboardPage {
+  final String image;
+  final String title;
+  final String subtitle;
+
+  _OnboardPage({required this.image, required this.title, required this.subtitle});
+}
 
 class OnboardingView extends StatefulWidget {
   const OnboardingView({Key? key}) : super(key: key);
@@ -22,7 +62,7 @@ class _OnboardingViewState extends State<OnboardingView> {
     ),
     _OnboardPage(
       image: 'assets/images/onboarding/onboarding2.png',
-      title: 'Connecting Farmers, Buyers, &\nDelivery Personnel',
+      title: 'Connecting Farmers,\nBuyers, &\nDelivery Personnel',
       subtitle: 'All in one place',
     ),
     _OnboardPage(
@@ -36,22 +76,39 @@ class _OnboardingViewState extends State<OnboardingView> {
     if (_currentIndex < _pages.length - 1) {
       _pageController.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
     } else {
-      // TODO: After teammate merges welcome + auth UI, this should go to login
-      // Temporary: Navigate to home selector (will be replaced with new role selection)
-      Navigator.of(context).pushReplacementNamed(AppRoutes.homeSelector);
-      // After merge, change to: Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+      
+      Navigator.of(context).pushReplacementNamed(AppRoutes.welcome);
     }
+  }
+
+  Widget _buildDot(int index) {
+    final isActive = index == _currentIndex;
+    final Color activeColor = AppThemes.primaryGreen;
+    final Color inactiveColor = Colors.grey.shade300;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.only(right: 8),
+      width: isActive ? 28.0 : 10.0,
+      height: 10,
+      decoration: BoxDecoration(
+        color: isActive ? activeColor : inactiveColor,
+        borderRadius: BorderRadius.circular(5),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final primaryColor = AppThemes.primaryGreen;
 
     return Scaffold(
       backgroundColor: AppThemes.backgroundCream,
       body: SafeArea(
         child: Stack(
           children: [
+            // --- 1. PageView Content ---
             PageView.builder(
               controller: _pageController,
               itemCount: _pages.length,
@@ -61,15 +118,17 @@ class _OnboardingViewState extends State<OnboardingView> {
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    // Changed to CrossAxisAlignment.start to align elements to the left
+                    crossAxisAlignment: CrossAxisAlignment.stretch, 
                     children: [
-                      const SizedBox(height: 24),
-                      // illustration
-                      Expanded(
+                      // --- Image Area (Larger and Centered) ---
+                      SizedBox(height: size.height * 0.05), // Small top margin
+                      SizedBox(
+                        height: size.height * 0.55, // Allocated 55% of screen height for the image area
                         child: Center(
                           child: Image.asset(
                             page.image,
-                            fit: BoxFit.contain,
+                            fit: BoxFit.contain, // Ensures the image fits without cropping
                             errorBuilder: (context, error, stackTrace) {
                               return Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -87,72 +146,74 @@ class _OnboardingViewState extends State<OnboardingView> {
                           ),
                         ),
                       ),
-
-                      // Title and subtitle
+                      
+                      // --- Text Area (Below Image) ---
+                      SizedBox(height: size.height * 0.05), // Space below image (5% height)
                       Text(
                         page.title,
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        // --- FIX: Changed from TextAlign.center to TextAlign.start ---
+                        textAlign: TextAlign.start,
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: AppThemes.neutralDark,
+                          fontWeight: FontWeight.w700,
+                          fontSize: size.width * 0.065, // Responsive text size
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         page.subtitle,
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        // --- FIX: Changed from TextAlign.center to TextAlign.start ---
+                        textAlign: TextAlign.start,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w400,
+                          fontSize: size.width * 0.04,
+                        ),
                       ),
-
-                      const SizedBox(height: 60),
+                      
+                      const Spacer(), // Pushes content up, making room for bottom nav
+                      const SizedBox(height: 80), // Space reservation for bottom elements
                     ],
                   ),
                 );
               },
             ),
 
-            // bottom-left indicators
+            // --- 2. Pagination Dots ---
             Positioned(
               left: 24,
-              bottom: 32,
+              bottom: 48,
               child: Row(
-                children: List.generate(_pages.length, (i) {
-                  final isActive = i == _currentIndex;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.only(right: 8),
-                    width: isActive ? 28 : 12,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: isActive ? AppThemes.primaryGreen : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  );
-                }),
+                children: List.generate(_pages.length, (i) => _buildDot(i)),
               ),
             ),
 
-            // bottom-right curved green shape with arrow button
+            // --- 3. Combined Green Blob and Floating Action Button ---
             Positioned(
-              right: -20,
-              bottom: -20,
+              right: 0,
+              bottom: 0,
               child: Container(
-                width: 160,
-                height: 160,
+                // Size of the green quadrant blob
+                width: size.width * 0.45, 
+                height: size.width * 0.45, 
                 decoration: BoxDecoration(
-                  color: AppThemes.primaryGreen,
-                  borderRadius: BorderRadius.circular(80),
+                  color: primaryColor, 
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(size.width * 0.45), 
+                  ),
                 ),
                 child: Align(
-                  alignment: Alignment(0.35, 0.35),
-                  child: GestureDetector(
-                    onTap: _nextPage,
-                    child: Container(
-                      width: 56,
-                      height: 56,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                      ),
-                      child: Icon(
-                        Icons.arrow_forward,
-                        color: AppThemes.primaryGreen,
-                      ),
+                  // Position the button within the green blob.
+                  alignment: const Alignment(0.35, 0.35), 
+                  child: FloatingActionButton(
+                    onPressed: _nextPage,
+                    backgroundColor: Colors.white,
+                    shape: const CircleBorder(),
+                    elevation: 6,
+                    child: Icon(
+                      Icons.arrow_forward, 
+                      color: primaryColor, 
+                      size: 24,
                     ),
                   ),
                 ),
@@ -163,12 +224,4 @@ class _OnboardingViewState extends State<OnboardingView> {
       ),
     );
   }
-}
-
-class _OnboardPage {
-  final String image;
-  final String title;
-  final String subtitle;
-
-  _OnboardPage({required this.image, required this.title, required this.subtitle});
 }

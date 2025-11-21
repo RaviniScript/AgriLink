@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:agri_link/core/constants/app_themes.dart';
 import 'package:agri_link/routes/route_generator.dart';
 import 'package:agri_link/routes/app_routes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Initialize Firebase
+  
+  // Only initialize Firebase on mobile platforms (not web for now)
+  if (!kIsWeb) {
+    debugPrint('🔵 Initializing Firebase...');
+    await Firebase.initializeApp();
+    debugPrint('✅ Firebase initialized successfully!');
+  }
+  
   runApp(const MyApp());
 }
 

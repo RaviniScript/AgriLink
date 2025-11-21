@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:agri_link/routes/app_routes.dart';
+
+// Import views used by the app
 import 'package:agri_link/views/common/splash_view.dart';
-import 'package:agri_link/views/common/onboarding_view.dart';
-import 'package:agri_link/views/common/home_selector_view.dart';
+// hide AppRoutes from onboarding_view to avoid duplicate AppRoutes symbol
+import 'package:agri_link/views/common/onboarding_view.dart' hide AppRoutes;
+import 'package:agri_link/views/auth/welcome_view.dart' show WelcomeView;
+import 'package:agri_link/views/auth/register_view.dart';
+import 'package:agri_link/views/auth/login_view.dart';
+import 'package:agri_link/views/auth/role_selection_view.dart';
+import 'package:agri_link/views/farmer/farmer_home_view.dart';
 import 'package:agri_link/views/buyer/buyer_home_view.dart';
 import 'package:agri_link/views/buyer/fruits_view.dart';
 import 'package:agri_link/views/buyer/vegetables_view.dart';
@@ -18,22 +25,30 @@ import 'package:agri_link/views/buyer/product_detail_view.dart';
 import 'package:agri_link/views/buyer/checkout_view.dart';
 import 'package:agri_link/views/buyer/order_history_view.dart';
 import 'package:agri_link/views/buyer/favorites_view.dart';
+import 'package:agri_link/views/delivery/delivery_home_view.dart';
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
-    switch (settings.name) {
+    final name = settings.name ?? '';
+    switch (name) {
       case AppRoutes.splash:
         return MaterialPageRoute(builder: (_) => const SplashView());
       case AppRoutes.onboarding:
         return MaterialPageRoute(builder: (_) => const OnboardingView());
-      case AppRoutes.homeSelector:
-        return MaterialPageRoute(builder: (_) => const HomeSelectorView());
-      case AppRoutes.login:
-        return MaterialPageRoute(builder: (_) => const Placeholder()); // TODO: Replace with LoginView
+      // *** THIS IS THE CORRECT ROUTE MAPPING ***
+      case AppRoutes.welcome:
+        return MaterialPageRoute(builder: (_) => const WelcomeView());
+      // *****************************************
       case AppRoutes.register:
-        return MaterialPageRoute(builder: (_) => const Placeholder()); // TODO: Replace with RegisterView
+        return MaterialPageRoute(builder: (_) => const RegisterView());
+      case AppRoutes.login:
+        return MaterialPageRoute(builder: (_) => const LoginView());
+      case AppRoutes.roleSelection:
+        return MaterialPageRoute(builder: (_) => const RoleSelectionView());
+      case AppRoutes.homeSelector:
+        return MaterialPageRoute(builder: (_) => const Scaffold(body: Center(child: Text('Home selector (not implemented)'))));
       case AppRoutes.farmerHome:
-        return MaterialPageRoute(builder: (_) => const Placeholder()); // TODO: Replace with FarmerHomeView
+        return MaterialPageRoute(builder: (_) => const FarmerHomeView());
       case AppRoutes.buyerHome:
         return MaterialPageRoute(builder: (_) => const BuyerHomeView());
       case AppRoutes.fruits:
@@ -41,103 +56,77 @@ class RouteGenerator {
       case AppRoutes.vegetables:
         return MaterialPageRoute(builder: (_) => const VegetablesView());
       case AppRoutes.farmersList:
-        final args = settings.arguments as Map<String, dynamic>?;
+        final farmerArgs = settings.arguments as Map<String, dynamic>?;
         return MaterialPageRoute(
           builder: (_) => FarmersListView(
-            productName: args?['productName'],
+            productName: farmerArgs?['productName'],
           ),
         );
       case AppRoutes.farmerProfile:
-        final args = settings.arguments as Map<String, dynamic>;
+        final farmerProfileArgs = settings.arguments as Map<String, dynamic>;
         return MaterialPageRoute(
-          builder: (_) => FarmerProfileView(
-            farmerId: args['farmerId'] ?? '',
-            farmerName: args['farmerName'] ?? 'Farmer',
-            location: args['location'] ?? 'Location',
-            phone: args['phone'] ?? 'Phone',
-            image: args['image'] ?? '',
-          ),
+          builder: (_) => FarmerProfileView(farmer: farmerProfileArgs['farmer']),
         );
-      case AppRoutes.placeOrder:
-        final args = settings.arguments as Map<String, dynamic>;
-        return MaterialPageRoute(
-          builder: (_) => PlaceOrderView(
-            farmerName: args['farmerName'] ?? 'Farmer',
-            selectedProducts: args['selectedProducts'] ?? [],
-            notes: args['notes'],
-          ),
-        );
-      case AppRoutes.orderConfirmation:
-        final args = settings.arguments as Map<String, dynamic>;
-        return MaterialPageRoute(
-          builder: (_) => OrderConfirmationView(
-            orderId: args['orderId'] ?? '',
-            total: args['total'] ?? 0.0,
-          ),
-        );
-      case AppRoutes.cart:
-        return MaterialPageRoute(builder: (_) => const CartView());
+      case AppRoutes.buyerProfile:
+        return MaterialPageRoute(builder: (_) => const BuyerProfileView());
       case AppRoutes.searchResults:
-        final args = settings.arguments as Map<String, dynamic>;
+        final searchArgs = settings.arguments as Map<String, dynamic>;
         return MaterialPageRoute(
-          builder: (_) => SearchResultsView(query: args['query'] ?? ''),
+          builder: (_) => SearchResultsView(query: searchArgs['query']),
         );
       case AppRoutes.productDetail:
-        final args = settings.arguments as Map<String, dynamic>;
+        final productArgs = settings.arguments as Map<String, dynamic>;
         return MaterialPageRoute(
-          builder: (_) => ProductDetailView(product: args['product']),
+          builder: (_) => ProductDetailView(product: productArgs['product']),
         );
       case AppRoutes.checkout:
         return MaterialPageRoute(builder: (_) => const CheckoutView());
       case AppRoutes.orderHistory:
-        final args = settings.arguments as Map<String, dynamic>;
+        final orderArgs = settings.arguments as Map<String, dynamic>;
         return MaterialPageRoute(
           builder: (_) => OrderHistoryView(
-            buyerPhone: args['buyerPhone'] ?? '',
+            buyerPhone: orderArgs['buyerPhone'] ?? '',
           ),
         );
-      case AppRoutes.buyerProfile:
-        return MaterialPageRoute(builder: (_) => const BuyerProfileView());
       case AppRoutes.favorites:
         return MaterialPageRoute(builder: (_) => const FavoritesView());
       case AppRoutes.trackOrder:
-        final args = settings.arguments as Map<String, dynamic>;
+        final trackArgs = settings.arguments as Map<String, dynamic>;
         return MaterialPageRoute(
           builder: (_) => TrackOrderView(
-            orderId: args['orderId'] ?? '0000',
-            farmerName: args['farmerName'] ?? 'Farmer',
-            driverName: args['driverName'] ?? 'Driver',
-            driverPhone: args['driverPhone'] ?? 'N/A',
-            driverImage: args['driverImage'] ?? '',
-            currentStatus: args['currentStatus'] ?? 'placed',
-            statusHistory: args['statusHistory'] ?? [],
+            orderId: trackArgs['orderId'] ?? '0000',
+            farmerName: trackArgs['farmerName'] ?? 'Farmer',
           ),
         );
+      case AppRoutes.orderConfirmation:
+        final confirmArgs = settings.arguments as Map<String, dynamic>;
+        return MaterialPageRoute(
+          builder: (_) => OrderConfirmationView(
+            orderId: confirmArgs['orderId'],
+            total: confirmArgs['total'],
+          ),
+        );
+      case AppRoutes.cart:
+        return MaterialPageRoute(builder: (_) => const CartView());
       case AppRoutes.deliveryHome:
-        return MaterialPageRoute(builder: (_) => const Placeholder()); // TODO: Replace with DeliveryHomeView
+        return MaterialPageRoute(builder: (_) => const DeliveryHomeView());
       default:
+        debugPrint('No route defined for $name');
         return MaterialPageRoute(
           builder: (_) => Scaffold(
-            appBar: AppBar(
-              title: const Text('Error'),
-            ),
-            body: Center(
-              child: Text('No route defined for ${settings.name}'),
-            ),
+            appBar: AppBar(title: const Text('Error')),
+            body: Center(child: Text('No route defined for $name')),
           ),
         );
     }
   }
 
   static Route<dynamic> onUnknownRoute(RouteSettings settings) {
+    final name = settings.name ?? 'unknown';
     return MaterialPageRoute(
       builder: (_) => Scaffold(
-        appBar: AppBar(
-          title: const Text('Error'),
-        ),
-        body: Center(
-          child: Text('No route defined for ${settings.name}'),
-        ),
+        appBar: AppBar(title: const Text('Unknown route')),
+        body: Center(child: Text('Unknown route: $name')),
       ),
     );
   }
