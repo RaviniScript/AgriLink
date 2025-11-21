@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>AgriLink needs camera access to take profile pictures and product photos</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>AgriLink needs photo library access to select profile pictures and product images</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>AgriLink needs permission to save photos to your gallery</string>
 </dict>
 </plist>

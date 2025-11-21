@@ -36,8 +36,10 @@ class _OnboardingViewState extends State<OnboardingView> {
     if (_currentIndex < _pages.length - 1) {
       _pageController.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
     } else {
-      // Last page -> go to home selector (or login)
+      // TODO: After teammate merges welcome + auth UI, this should go to login
+      // Temporary: Navigate to home selector (will be replaced with new role selection)
       Navigator.of(context).pushReplacementNamed(AppRoutes.homeSelector);
+      // After merge, change to: Navigator.of(context).pushReplacementNamed(AppRoutes.login);
     }
   }
 
