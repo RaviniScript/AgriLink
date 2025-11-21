@@ -1,12 +1,11 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:agri_link/core/constants/app_themes.dart';
 import 'package:agri_link/routes/app_routes.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SplashView extends StatefulWidget {
-  const SplashView({Key? key}) : super(key: key);
+  const SplashView({super.key});
 
   @override
   State<SplashView> createState() => _SplashViewState();
@@ -29,14 +28,27 @@ class _SplashViewState extends State<SplashView> {
       body: SafeArea(
         child: Stack(
           children: [
-            // background image aligned to bottom-left
-            Positioned(
-              left: 0,
-              bottom: 0,
-              child: Image.asset(
-                'assets/images/splash/splash_bg.png',
-                width: MediaQuery.of(context).size.width * 0.95,
-                fit: BoxFit.cover,
+            // Full-screen background with bottom-left alignment and subtle overlay
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppThemes.backgroundCream,
+                  image: DecorationImage(
+                    image: const AssetImage('assets/images/splash/splash_bg.png'),
+                    fit: BoxFit.cover,
+                    alignment: Alignment.bottomLeft,
+                    // subtle darkening so center text remains readable
+                    colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.08), BlendMode.darken),
+                  ),
+                ),
+                // fallback in case the asset is missing
+                child: Image.asset(
+                  'assets/images/splash/splash_bg.png',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.bottomLeft,
+                  // if the image can't be loaded, show plain background
+                  errorBuilder: (context, error, stackTrace) => Container(color: AppThemes.backgroundCream),
+                ),
               ),
             ),
 

@@ -66,9 +66,6 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assets/images/fruits/
-    - assets/images/vegetables/
-    - assets/icons/
     - assets/images/splash/
     - assets/images/onboarding/
 
