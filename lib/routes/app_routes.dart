@@ -11,13 +11,17 @@ import 'package:agri_link/views/farmer/view_orders_view.dart';
 import 'package:agri_link/views/farmer/stock_history_view.dart';
 
 class AppRoutes {
+  // General
   static const String splash = '/';
   static const String onboarding = '/onboarding';
   static const String homeSelector = '/homeSelector';
-  
-  // Auth Routes
+
+  // Auth
+  static const String welcome = '/welcome';
   static const String login = '/login';
+  static const String password = '/password';
   static const String register = '/register';
+  static const String roleSelection = '/roleSelection';
   
   // Farmer Routes
   static const String farmerHome = '/farmer-home';
@@ -56,8 +60,8 @@ class AppRoutes {
   static const String vegetableDetails = '/vegetableDetails';
   static const String cart = '/cart';
   static const String buyerOrders = '/buyerOrders';
-  
-  // Delivery Routes
+
+  // Delivery
   static const String deliveryHome = '/deliveryHome';
   static const String deliveryOrderList = '/deliveryOrderList';
   static const String deliveryMap = '/deliveryMap';

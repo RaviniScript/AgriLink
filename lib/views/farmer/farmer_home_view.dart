@@ -3,15 +3,17 @@ import 'dart:async';
 import '../../core/constants/app_themes.dart';
 import '../../widgets/common/custom_bottom_nav_bar.dart';
 import '../../routes/app_routes.dart';
+import '../../services/auth_service.dart';
 
 class FarmerHomeView extends StatefulWidget {
-  const FarmerHomeView({Key? key}) : super(key: key);
+  const FarmerHomeView({super.key});
 
   @override
   State<FarmerHomeView> createState() => _FarmerHomeViewState();
 }
 
 class _FarmerHomeViewState extends State<FarmerHomeView> {
+  final AuthService _authService = AuthService();
   int _selectedNavIndex = 0;
   final PageController _pageController = PageController();
   int _currentPage = 0;
@@ -63,6 +65,13 @@ class _FarmerHomeViewState extends State<FarmerHomeView> {
       case 3:
         Navigator.pushReplacementNamed(context, AppRoutes.farmerSettings);
         break;
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    await _authService.signOut();
+    if (mounted) {
+      Navigator.of(context).pushReplacementNamed(AppRoutes.welcome);
     }
   }
 
