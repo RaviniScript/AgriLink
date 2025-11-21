@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:agri_link/routes/app_routes.dart';
 import 'package:agri_link/views/common/splash_view.dart';
 import 'package:agri_link/views/common/onboarding_view.dart';
+import 'package:agri_link/views/common/home_selector_view.dart';
+import 'package:agri_link/views/farmer/farmer_home_view.dart';
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -11,13 +13,13 @@ class RouteGenerator {
       case AppRoutes.onboarding:
         return MaterialPageRoute(builder: (_) => const OnboardingView());
       case AppRoutes.homeSelector:
-        return MaterialPageRoute(builder: (_) => const Placeholder()); // TODO: Replace with HomeSelectorView
+        return MaterialPageRoute(builder: (_) => const HomeSelectorView());
       case AppRoutes.login:
         return MaterialPageRoute(builder: (_) => const Placeholder()); // TODO: Replace with LoginView
       case AppRoutes.register:
         return MaterialPageRoute(builder: (_) => const Placeholder()); // TODO: Replace with RegisterView
       case AppRoutes.farmerHome:
-        return MaterialPageRoute(builder: (_) => const Placeholder()); // TODO: Replace with FarmerHomeView
+        return MaterialPageRoute(builder: (_) => const FarmerHomeView());
       case AppRoutes.buyerHome:
         return MaterialPageRoute(builder: (_) => const Placeholder()); // TODO: Replace with BuyerHomeView
       case AppRoutes.deliveryHome:

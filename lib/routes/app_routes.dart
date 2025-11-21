@@ -1,3 +1,15 @@
+import 'package:flutter/material.dart';
+
+import 'package:agri_link/views/farmer/farmer_home_view.dart';
+import 'package:agri_link/views/farmer/farmer_accounts_view.dart';
+import 'package:agri_link/views/farmer/farmer_profile_view.dart';
+import 'package:agri_link/views/farmer/farmer_settings_view.dart';
+import 'package:agri_link/views/farmer/my_crops_view.dart';
+import 'package:agri_link/views/farmer/add_crops_view.dart';
+import 'package:agri_link/views/farmer/update_crops_view.dart';
+import 'package:agri_link/views/farmer/view_orders_view.dart';
+import 'package:agri_link/views/farmer/stock_history_view.dart';
+
 class AppRoutes {
   static const String splash = '/';
   static const String onboarding = '/onboarding';
@@ -8,13 +20,31 @@ class AppRoutes {
   static const String register = '/register';
   
   // Farmer Routes
-  static const String farmerHome = '/farmerHome';
-  static const String selectCategory = '/selectCategory';
-  static const String addFruit = '/addFruit';
-  static const String addVegetable = '/addVegetable';
-  static const String manageFruitStock = '/manageFruitStock';
-  static const String manageVegetableStock = '/manageVegetableStock';
-  static const String farmerOrders = '/farmerOrders';
+  static const String farmerHome = '/farmer-home';
+  static const String farmerAccounts = '/farmer-accounts';
+  static const String farmerProfile = '/farmer-profile';
+  static const String farmerSettings = '/farmer-settings';
+  static const String myCrops = '/my-crops';
+  static const String addCrops = '/add-crops';
+  static const String updateCrops = '/update-crops';
+  static const String viewOrders = '/view-orders';
+  static const String orderDetails = '/order-details';
+  static const String stockHistory = '/stock-history';
+
+  static Map<String, WidgetBuilder> routes = {
+    farmerHome: (context) => const FarmerHomeView(),
+    farmerAccounts: (context) => const FarmerAccountsView(),
+    farmerProfile: (context) => const FarmerProfileView(),
+    farmerSettings: (context) => const FarmerSettingsView(),
+    myCrops: (context) => const MyCropsView(),
+    addCrops: (context) => const AddCropsView(),
+    updateCrops: (context) {
+      final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+      return UpdateCropsView(cropData: args ?? {});
+    },
+    viewOrders: (context) => const ViewOrdersView(),
+    stockHistory: (context) => const StockHistoryView(),
+  };
   
   // Buyer Routes
   static const String buyerHome = '/buyerHome';

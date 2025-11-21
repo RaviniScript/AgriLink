@@ -39,4 +39,3 @@ class CategoryRepositoryImpl implements CategoryRepository {
     throw UnimplementedError();
   }
 }
-flutter pub upgrade

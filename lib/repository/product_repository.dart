@@ -1,55 +1,30 @@
-import 'package:agri_link/models/product_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/product_model.dart';
 
-abstract class ProductRepository {
-  Future<List<ProductModel>> getAllProducts();
-  Future<List<ProductModel>> getProductsByCategory(String category);
-  Future<ProductModel> getProductById(String id);
-  Future<List<ProductModel>> getProductsByFarmerId(String farmerId);
-  Future<ProductModel> createProduct(ProductModel product);
-  Future<ProductModel> updateProduct(ProductModel product);
-  Future<void> deleteProduct(String id);
-}
+class ProductRepository {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-class ProductRepositoryImpl implements ProductRepository {
-  @override
+  CollectionReference get _products => _firestore.collection('products');
+
   Future<List<ProductModel>> getAllProducts() async {
-    // TODO: Implement get all products
-    throw UnimplementedError();
+    final snap = await _products.orderBy('name').get();
+    return snap.docs.map((d) => ProductModel.fromDocument(d)).toList();
   }
 
-  @override
   Future<List<ProductModel>> getProductsByCategory(String category) async {
-    // TODO: Implement get products by category
-    throw UnimplementedError();
+    final snap = await _products.where('category', isEqualTo: category).get();
+    return snap.docs.map((d) => ProductModel.fromDocument(d)).toList();
   }
 
-  @override
-  Future<ProductModel> getProductById(String id) async {
-    // TODO: Implement get product by id
-    throw UnimplementedError();
+  Future<void> createProduct(ProductModel product) async {
+    await _products.add(product.toJson());
   }
 
-  @override
-  Future<List<ProductModel>> getProductsByFarmerId(String farmerId) async {
-    // TODO: Implement get products by farmer id
-    throw UnimplementedError();
+  Future<void> updateProduct(ProductModel product) async {
+    await _products.doc(product.id).update(product.toJson());
   }
 
-  @override
-  Future<ProductModel> createProduct(ProductModel product) async {
-    // TODO: Implement create product
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<ProductModel> updateProduct(ProductModel product) async {
-    // TODO: Implement update product
-    throw UnimplementedError();
-  }
-
-  @override
   Future<void> deleteProduct(String id) async {
-    // TODO: Implement delete product
-    throw UnimplementedError();
+    await _products.doc(id).delete();
   }
 }

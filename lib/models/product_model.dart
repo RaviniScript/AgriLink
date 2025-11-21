@@ -1,53 +1,39 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ProductModel {
   final String id;
   final String name;
-  final String description;
+  final String? description;
   final double price;
-  final String category;
-  final int quantity;
-  final String farmerId;
   final String? imageUrl;
-  final DateTime createdAt;
+  final String? category;
 
   ProductModel({
     required this.id,
     required this.name,
-    required this.description,
+    this.description,
     required this.price,
-    required this.category,
-    required this.quantity,
-    required this.farmerId,
     this.imageUrl,
-    required this.createdAt,
+    this.category,
   });
 
-  factory ProductModel.fromJson(Map<String, dynamic> json) {
+  factory ProductModel.fromDocument(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
     return ProductModel(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      price: json['price'],
-      category: json['category'],
-      quantity: json['quantity'],
-      farmerId: json['farmerId'],
-      imageUrl: json['imageUrl'],
-      createdAt: DateTime.parse(json['createdAt']),
+      id: doc.id,
+      name: data['name'] ?? '',
+      description: data['description'],
+      price: (data['price'] ?? 0).toDouble(),
+      imageUrl: data['imageUrl'],
+      category: data['category'],
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-      'price': price,
-      'category': category,
-      'quantity': quantity,
-      'farmerId': farmerId,
-      'imageUrl': imageUrl,
-      'createdAt': createdAt.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'description': description,
+        'price': price,
+        'imageUrl': imageUrl,
+        'category': category,
+      };
 }
-
-

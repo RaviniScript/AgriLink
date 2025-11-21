@@ -37,3 +37,27 @@ class AppThemes {
 		),
 	);
 }
+
+// Backward-compatible color constants used across the app
+class AppColors {
+	AppColors._();
+
+	static const Color primary = Color(0xFF609400);
+	static const Color primaryLight = Color(0xFF8BBF3A);
+	static const Color primaryDark = Color(0xFF3F6B00);
+	static const Color success = Color(0xFF2E7D32);
+	static const Color info = Color(0xFF0288D1);
+	static const Color textSecondary = Color(0xFF6B6B6B);
+	static const Color error = Color(0xFFB00020);
+}
+
+// Simple text style tokens used by older files
+class AppTextStyles {
+	AppTextStyles._();
+
+	static const TextStyle h2 = TextStyle(fontSize: 30, fontWeight: FontWeight.w700, fontFamily: 'Poppins');
+	static const TextStyle h3 = TextStyle(fontSize: 24, fontWeight: FontWeight.w600, fontFamily: 'Poppins');
+	static const TextStyle bodyMedium = TextStyle(fontSize: 14, fontWeight: FontWeight.w400, fontFamily: 'Poppins');
+	static const TextStyle bodySmall = TextStyle(fontSize: 12, fontWeight: FontWeight.w400, fontFamily: 'Poppins');
+	static const TextStyle button = TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Poppins');
+}
