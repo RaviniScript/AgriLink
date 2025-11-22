@@ -40,8 +40,6 @@ class AppRoutes {
   static const String trackOrder = '/trackOrder';
   static const String cart = '/cart';
   static const String buyerOrders = '/buyerOrders';
-<<<<<<< HEAD
-  static const String favorites = '/favorites';
   static const String favorites = '/favorites';
   
   // Delivery

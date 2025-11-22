@@ -5,7 +5,7 @@ import 'package:agri_link/routes/app_routes.dart';
 import 'package:agri_link/services/buyer_service.dart';
 import 'package:agri_link/models/buyer_model.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:agri_link/services/image_upload_service.dart';
 import 'dart:io';
 
 class BuyerProfileView extends StatefulWidget {
@@ -159,33 +159,34 @@ class _BuyerProfileViewState extends State<BuyerProfileView> {
         );
       }
 
-      // Create a reference to Firebase Storage
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('profile_images')
-          .child('$_buyerId.jpg');
+      // Upload to imgBB (free image hosting)
+      final imageUrl = await ImageUploadService.uploadImage(imageFile);
 
-      // Upload the file
-      final uploadTask = await storageRef.putFile(imageFile);
+      if (imageUrl != null) {
+        // Update local state
+        setState(() {
+          _profileImageUrl = imageUrl;
+        });
 
-      // Get the download URL
-      final downloadUrl = await uploadTask.ref.getDownloadURL();
-
-      // Update Firestore with the new image URL
-      await _buyerService.updateBuyerProfile(
-        _buyerId,
-        {'profileImageUrl': downloadUrl},
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile picture updated successfully!'),
-            backgroundColor: AppThemes.primaryGreen,
-          ),
+        // Update Firestore with the new image URL
+        await _buyerService.updateBuyerProfile(
+          _buyerId,
+          {'profileImageUrl': imageUrl},
         );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile picture updated successfully!'),
+              backgroundColor: AppThemes.primaryGreen,
+            ),
+          );
+        }
+      } else {
+        throw Exception('Failed to upload image');
       }
     } catch (e) {
+      print('Upload Error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

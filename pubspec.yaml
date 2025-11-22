@@ -42,7 +42,9 @@ dependencies:
   provider: ^6.1.5+1
   geolocator: ^14.0.2
   google_fonts: ^6.3.2
-
+  image_picker: ^1.1.2
+  intl: ^0.19.0
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:
@@ -66,8 +68,17 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
+    - assets/icons/
     - assets/images/splash/
     - assets/images/onboarding/
+    - assets/images/buyer/
+    - assets/images/buyer/carousel/
+    - assets/images/buyer/farmers/
+    - assets/images/buyer/fruits/
+    - assets/images/buyer/vegetables/
+    - assets/images/buyer/profile/
+    - assets/images/fruits/
+    - assets/images/vegetables/
 
   # Fonts (bundle exact font files into the app for pixel-consistent typography)
   # Add the TTF files to the `assets/fonts/` folder (not included here).

@@ -65,7 +65,13 @@ class RouteGenerator {
       case AppRoutes.farmerProfile:
         final farmerProfileArgs = settings.arguments as Map<String, dynamic>;
         return MaterialPageRoute(
-          builder: (_) => FarmerProfileView(farmer: farmerProfileArgs['farmer']),
+          builder: (_) => FarmerProfileView(
+            farmerId: farmerProfileArgs['farmerId'],
+            farmerName: farmerProfileArgs['farmerName'],
+            location: farmerProfileArgs['location'],
+            phone: farmerProfileArgs['phone'],
+            image: farmerProfileArgs['image'],
+          ),
         );
       case AppRoutes.buyerProfile:
         return MaterialPageRoute(builder: (_) => const BuyerProfileView());
@@ -96,6 +102,11 @@ class RouteGenerator {
           builder: (_) => TrackOrderView(
             orderId: trackArgs['orderId'] ?? '0000',
             farmerName: trackArgs['farmerName'] ?? 'Farmer',
+            driverName: trackArgs['driverName'] ?? 'Driver',
+            driverPhone: trackArgs['driverPhone'] ?? '+94 71 234 5678',
+            driverImage: trackArgs['driverImage'] ?? '',
+            currentStatus: trackArgs['currentStatus'] ?? 'Processing',
+            statusHistory: trackArgs['statusHistory'] ?? [],
           ),
         );
       case AppRoutes.orderConfirmation:
