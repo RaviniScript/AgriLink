@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:agri_link/core/constants/app_themes.dart';
+
+import 'package:flutter/material.dart';
+import 'package:agri_link/core/constants/app_themes.dart';
 import 'package:agri_link/routes/app_routes.dart';
 import 'package:agri_link/services/product_service.dart';
-import 'package:agri_link/services/cart_service.dart';
 import 'package:agri_link/models/product_model.dart';
 
 class VegetablesView extends StatefulWidget {
@@ -14,10 +16,34 @@ class VegetablesView extends StatefulWidget {
 
 class _VegetablesViewState extends State<VegetablesView> {
   final ProductService _productService = ProductService();
-  final CartService _cartService = CartService();
   final TextEditingController _searchController = TextEditingController();
   List<ProductModel> _products = [];
   bool _isLoading = true;
+
+  // Local asset images mapping
+  final Map<String, String> _productImages = {
+    'pumpkin': 'assets/images/vegetables/pumpkin-season-australia.webp',
+    'carrot': 'assets/images/vegetables/carrot.webp',
+    'broccoli': 'assets/images/vegetables/broccoli.jpg',
+    'capsicum': 'assets/images/vegetables/capsicum.jpg',
+    'cabbage': 'assets/images/vegetables/cabbage.webp',
+    'leeks': 'assets/images/vegetables/leeks.webp',
+    'ladies finger': 'assets/images/vegetables/ladies.png',
+    'bitter gourd': 'assets/images/vegetables/bitter gourd.webp',
+  };
+
+  String _getProductImage(String productName) {
+    final key = productName.toLowerCase();
+    return _productImages[key] ?? 'assets/images/vegetables/carrot.webp';
+  }
+
+  List<String> _getUniqueProductNames(List<ProductModel> products) {
+    final names = <String>{};
+    for (var p in products) {
+      names.add(p.name.toLowerCase());
+    }
+    return names.toList();
+  }
 
   @override
   void initState() {
@@ -136,9 +162,52 @@ class _VegetablesViewState extends State<VegetablesView> {
                             mainAxisSpacing: 12,
                             childAspectRatio: 0.75,
                           ),
-                          itemCount: _products.length,
+                          itemCount: _getUniqueProductNames(_products).length,
                           itemBuilder: (context, index) {
-                            return _buildProductCard(_products[index]);
+                            final uniqueNames = _getUniqueProductNames(_products);
+                            final productName = uniqueNames[index];
+                            final imagePath = _getProductImage(productName);
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.productFarmers,
+                                  arguments: {'productName': productName},
+                                );
+                              },
+                              child: Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                elevation: 3,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Image.asset(
+                                          imagePath,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                                      child: Text(
+                                        productName[0].toUpperCase() + productName.substring(1),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
                           },
                         ),
                       ),
@@ -147,117 +216,5 @@ class _VegetablesViewState extends State<VegetablesView> {
       ),
     );
   }
-
-  Widget _buildProductCard(ProductModel product) {
-    return Builder(
-      builder: (context) => GestureDetector(
-        onTap: () {
-          Navigator.pushNamed(
-            context,
-            AppRoutes.productDetail,
-            arguments: {'product': product},
-          );
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: product.imageUrl.isNotEmpty
-                    ? Image.network(
-                        product.imageUrl,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                            ),
-                          );
-                        },
-                        errorBuilder: (c, e, s) => Container(
-                          color: Colors.grey[200],
-                          child: const Center(child: Icon(Icons.image, size: 48)),
-                        ),
-                      )
-                    : Container(
-                        color: Colors.grey[200],
-                        child: const Center(child: Icon(Icons.image, size: 48)),
-                      ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppThemes.primaryGreen,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    product.name,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Rs ${product.price.toStringAsFixed(2)}/${product.unit}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 28,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        _cartService.addToCart(product);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${product.name} added to cart'),
-                            duration: const Duration(seconds: 2),
-                            action: SnackBarAction(
-                              label: 'VIEW',
-                              textColor: Colors.white,
-                              onPressed: () {
-                                Navigator.pushNamed(context, AppRoutes.cart);
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.add_shopping_cart, size: 14),
-                      label: const Text('Add', style: TextStyle(fontSize: 11)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppThemes.primaryGreen,
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
+// (trailing corrupted code removed)

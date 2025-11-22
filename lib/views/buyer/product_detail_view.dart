@@ -274,7 +274,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.product.description,
+                      widget.product.description ?? '',
                       style: TextStyle(
                         fontSize: 15,
                         height: 1.6,

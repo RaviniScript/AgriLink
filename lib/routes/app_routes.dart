@@ -59,7 +59,9 @@ class AppRoutes {
   static const String vegetablesList = '/vegetablesList';
   static const String vegetableDetails = '/vegetableDetails';
   static const String farmersList = '/farmersList';
-  static const String farmerProfile = '/farmerProfile';
+  static const String farmerAllProducts = '/farmerAllProducts';
+  static const String productFarmers = '/productFarmers';
+  static const String farmerProducts = '/farmerProducts';
   static const String buyerProfile = '/buyerProfile';
   static const String searchResults = '/searchResults';
   static const String productDetail = '/productDetail';

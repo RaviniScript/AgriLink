@@ -21,22 +21,41 @@ class CropViewModel extends ChangeNotifier {
     required String name,
     required String category,
     required double quantity,
+    String unit = 'kg',
     required double amount,
     required File imageFile,
     required String city,
     String? ownerId,
+    List<File>? additionalImages,
   }) async {
     final user = _auth.currentUser;
     final resolvedOwnerId = ownerId ?? user?.uid ?? 'demo_farmer';
-    final imageUrl = await _repo.uploadImage(imageFile, resolvedOwnerId);
+    
+    // Upload all images
+    List<String> allImageUrls = [];
+    
+    // Upload main image first
+    final mainImageUrl = await _repo.uploadImage(imageFile, resolvedOwnerId);
+    if (mainImageUrl != null) {
+      allImageUrls.add(mainImageUrl);
+    }
+    
+    // Upload additional images if provided
+    if (additionalImages != null && additionalImages.isNotEmpty) {
+      final additionalUrls = await _repo.uploadMultipleImages(additionalImages, resolvedOwnerId);
+      allImageUrls.addAll(additionalUrls);
+    }
+    
     final crop = CropModel(
       id: '',
       ownerId: resolvedOwnerId,
       name: name,
       category: category,
       quantity: quantity,
+      unit: unit,
       amount: amount,
-      imageUrl: imageUrl,
+      imageUrl: allImageUrls.isNotEmpty ? allImageUrls.first : '',
+      imageUrls: allImageUrls,
       city: city,
       createdAt: DateTime.now(),
     );
@@ -62,7 +81,7 @@ class CropViewModel extends ChangeNotifier {
     
     // Upload new image if provided
     if (newImageFile != null) {
-      imageUrl = await _repo.uploadImage(newImageFile, ownerId);
+      imageUrl = await _repo.uploadImage(newImageFile, ownerId) ?? currentImageUrl;
     }
     
     final crop = CropModel(

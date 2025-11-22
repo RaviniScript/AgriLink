@@ -15,6 +15,9 @@ import 'package:agri_link/views/buyer/fruits_view.dart';
 import 'package:agri_link/views/buyer/vegetables_view.dart';
 import 'package:agri_link/views/buyer/farmers_list_view.dart';
 import 'package:agri_link/views/buyer/farmer_profile_view.dart';
+import 'package:agri_link/views/buyer/farmer_all_products_view.dart';
+import 'package:agri_link/views/buyer/product_farmers_view.dart';
+import 'package:agri_link/views/buyer/farmer_products_view.dart';
 import 'package:agri_link/views/buyer/buyer_profile_view.dart';
 import 'package:agri_link/views/buyer/place_order_view.dart';
 import 'package:agri_link/views/buyer/order_confirmation_view.dart';
@@ -60,6 +63,13 @@ class RouteGenerator {
             productName: farmerArgs?['productName'],
           ),
         );
+      case AppRoutes.farmerAllProducts:
+        final farmerArgs = settings.arguments as Map<String, dynamic>;
+        return MaterialPageRoute(
+          builder: (_) => FarmerAllProductsView(
+            farmer: farmerArgs['farmer'],
+          ),
+        );
       case AppRoutes.farmerProfile:
         final farmerProfileArgs = settings.arguments as Map<String, dynamic>;
         return MaterialPageRoute(
@@ -94,6 +104,23 @@ class RouteGenerator {
         );
       case AppRoutes.favorites:
         return MaterialPageRoute(builder: (_) => const FavoritesView());
+      case AppRoutes.productFarmers:
+        final productFarmersArgs = settings.arguments as Map<String, dynamic>;
+        return MaterialPageRoute(
+          builder: (_) => ProductFarmersView(
+            productName: productFarmersArgs['productName'],
+            category: productFarmersArgs['category'],
+          ),
+        );
+      case AppRoutes.farmerProducts:
+        final farmerProductsArgs = settings.arguments as Map<String, dynamic>;
+        return MaterialPageRoute(
+          builder: (_) => FarmerProductsView(
+            farmer: farmerProductsArgs['farmer'],
+            products: farmerProductsArgs['products'],
+            productName: farmerProductsArgs['productName'],
+          ),
+        );
       case AppRoutes.trackOrder:
         final trackArgs = settings.arguments as Map<String, dynamic>;
         return MaterialPageRoute(

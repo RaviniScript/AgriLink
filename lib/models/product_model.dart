@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'crop_model.dart';
 
 class ProductModel {
   final String id;
@@ -8,6 +9,7 @@ class ProductModel {
   final String unit; // kg, g, bunch, piece, etc.
   final String category; // vegetables, fruits
   final String imageUrl;
+  final List<String> imageUrls; // Multiple images support
   final String farmerId;
   final String farmerName;
   final String farmerLocation;
@@ -26,6 +28,7 @@ class ProductModel {
     required this.unit,
     required this.category,
     required this.imageUrl,
+    List<String>? imageUrls,
     required this.farmerId,
     required this.farmerName,
     required this.farmerLocation,
@@ -35,10 +38,15 @@ class ProductModel {
     required this.stockQuantity,
     required this.createdAt,
     required this.updatedAt,
-  });
+  }) : imageUrls = imageUrls ?? [imageUrl];
 
   // Convert from Firestore document
   factory ProductModel.fromFirestore(Map<String, dynamic> data, String docId) {
+    final String mainImageUrl = data['imageUrl'] ?? '';
+    final List<String> imageUrlsList = data['imageUrls'] != null 
+        ? List<String>.from(data['imageUrls']) 
+        : (mainImageUrl.isNotEmpty ? [mainImageUrl] : []);
+        
     return ProductModel(
       id: docId,
       name: data['name'] ?? '',
@@ -46,7 +54,8 @@ class ProductModel {
       price: (data['price'] ?? 0).toDouble(),
       unit: data['unit'] ?? 'kg',
       category: data['category'] ?? '',
-      imageUrl: data['imageUrl'] ?? '',
+      imageUrl: mainImageUrl,
+      imageUrls: imageUrlsList,
       farmerId: data['farmerId'] ?? '',
       farmerName: data['farmerName'] ?? '',
       farmerLocation: data['farmerLocation'] ?? '',
@@ -56,6 +65,29 @@ class ProductModel {
       stockQuantity: data['stockQuantity'] ?? 0,
       createdAt: data['createdAt']?.toDate() ?? DateTime.now(),
       updatedAt: data['updatedAt']?.toDate() ?? DateTime.now(),
+    );
+  }
+
+  // Convert from CropModel (farmer's crops to buyer's products)
+  factory ProductModel.fromCrop(CropModel crop, {String? farmerName, String? farmerLocation}) {
+    return ProductModel(
+      id: crop.id,
+      name: crop.name,
+      description: null,
+      price: crop.amount,
+      unit: crop.unit,
+      category: crop.category,
+      imageUrl: crop.imageUrl,
+      imageUrls: crop.imageUrls,
+      farmerId: crop.ownerId,
+      farmerName: farmerName ?? 'Unknown Farmer',
+      farmerLocation: farmerLocation ?? crop.city,
+      rating: 0.0,
+      reviewCount: 0,
+      isAvailable: true,
+      stockQuantity: crop.quantity.toInt(),
+      createdAt: crop.createdAt,
+      updatedAt: crop.createdAt,
     );
   }
 

@@ -6,6 +6,7 @@ import 'package:agri_link/services/buyer_service.dart';
 import 'package:agri_link/models/buyer_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:agri_link/services/image_upload_service.dart';
+import 'package:agri_link/services/auth_service.dart';
 import 'dart:io';
 
 class BuyerProfileView extends StatefulWidget {
@@ -17,10 +18,10 @@ class BuyerProfileView extends StatefulWidget {
 
 class _BuyerProfileViewState extends State<BuyerProfileView> {
   final BuyerService _buyerService = BuyerService();
+  final AuthService _authService = AuthService();
   final _formKey = GlobalKey<FormState>();
   
-  // Use a fixed buyer ID for demo (in production, get from auth)
-  final String _buyerId = 'buyer_001';
+  String? _buyerId;
   
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
@@ -39,13 +40,19 @@ class _BuyerProfileViewState extends State<BuyerProfileView> {
   @override
   void initState() {
     super.initState();
+    _buyerId = _authService.currentUserId;
     _loadBuyerProfile();
   }
 
   Future<void> _loadBuyerProfile() async {
+    if (_buyerId == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+    
     setState(() => _isLoading = true);
     try {
-      final buyer = await _buyerService.getBuyerProfile(_buyerId);
+      final buyer = await _buyerService.getBuyerProfile(_buyerId!);
       if (buyer != null) {
         nameController.text = buyer.name;
         phoneController.text = buyer.phone;
@@ -55,19 +62,22 @@ class _BuyerProfileViewState extends State<BuyerProfileView> {
         postalCodeController.text = buyer.postalCode;
         _profileImageUrl = buyer.profileImageUrl;
       } else {
-        // Create new profile with default values
-        final newBuyer = BuyerModel(
-          id: _buyerId,
-          name: 'Ruwan Hettiarachchi',
-          email: 'ruwan@example.com',
-          phone: '0771234567',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-        await _buyerService.saveBuyerProfile(newBuyer);
-        nameController.text = newBuyer.name;
-        phoneController.text = newBuyer.phone;
-        emailController.text = newBuyer.email;
+        // Create new profile from current user data
+        final currentUser = _authService.currentUser;
+        if (currentUser != null) {
+          final newBuyer = BuyerModel(
+            id: _buyerId!,
+            name: currentUser.displayName ?? 'User',
+            email: currentUser.email ?? '',
+            phone: '',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+          await _buyerService.saveBuyerProfile(newBuyer);
+          nameController.text = newBuyer.name;
+          phoneController.text = newBuyer.phone;
+          emailController.text = newBuyer.email;
+        }
       }
     } catch (e) {
       print('Error loading profile: $e');
@@ -78,11 +88,12 @@ class _BuyerProfileViewState extends State<BuyerProfileView> {
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_buyerId == null) return;
 
     setState(() => _isSaving = true);
     try {
       final buyer = BuyerModel(
-        id: _buyerId,
+        id: _buyerId!,
         name: nameController.text.trim(),
         email: emailController.text.trim(),
         phone: phoneController.text.trim(),
@@ -169,10 +180,12 @@ class _BuyerProfileViewState extends State<BuyerProfileView> {
         });
 
         // Update Firestore with the new image URL
-        await _buyerService.updateBuyerProfile(
-          _buyerId,
-          {'profileImageUrl': imageUrl},
-        );
+        if (_buyerId != null) {
+          await _buyerService.updateBuyerProfile(
+            _buyerId!,
+            {'profileImageUrl': imageUrl},
+          );
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:agri_link/core/constants/app_themes.dart';
 import 'package:agri_link/routes/app_routes.dart';
 import 'package:agri_link/services/product_service.dart';
-import 'package:agri_link/services/cart_service.dart';
 import 'package:agri_link/models/product_model.dart';
 
 class FruitsView extends StatefulWidget {
@@ -14,10 +13,27 @@ class FruitsView extends StatefulWidget {
 
 class _FruitsViewState extends State<FruitsView> {
   final ProductService _productService = ProductService();
-  final CartService _cartService = CartService();
   final TextEditingController _searchController = TextEditingController();
   List<ProductModel> _products = [];
   bool _isLoading = true;
+
+  // Map fruit names to asset images
+  final Map<String, String> _fruitImages = {
+    'banana': 'assets/images/fruits/banana.jpg',
+    'avocado': 'assets/images/fruits/avocado.jpg',
+    'pineapple': 'assets/images/fruits/pineapple.jpg',
+    'wood apple': 'assets/images/fruits/wood apple.webp',
+    'mango': 'assets/images/fruits/mango.png',
+    'papaya': 'assets/images/fruits/papaya.webp',
+    'lime': 'assets/images/fruits/lime.webp',
+    'durian': 'assets/images/fruits/durian.jpg',
+    'watermelon': 'assets/images/fruits/watermelon.webp',
+    'grapes': 'assets/images/fruits/grapes.webp',
+  };
+
+  String _getFruitImage(String name) {
+    return _fruitImages[name.toLowerCase()] ?? 'assets/images/fruits/banana.jpg';
+  }
 
   @override
   void initState() {
@@ -25,39 +41,33 @@ class _FruitsViewState extends State<FruitsView> {
     _loadFruits();
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   Future<void> _loadFruits() async {
     setState(() => _isLoading = true);
-    try {
-      final products = await _productService.getProductsByCategory('fruits');
-      setState(() {
-        _products = products;
-        _isLoading = false;
-      });
-    } catch (e) {
-      print('Error loading fruits: $e');
-      setState(() => _isLoading = false);
+    final products = await _productService.getProductsByCategory('fruits');
+    setState(() {
+      _products = products;
+      _isLoading = false;
+    });
+  }
+
+  List<String> _getUniqueFruitNames() {
+    final names = <String>{};
+    for (var p in _products) {
+      names.add(p.name.toLowerCase());
     }
+    return names.toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final uniqueNames = _getUniqueFruitNames();
     return Scaffold(
       backgroundColor: AppThemes.backgroundCream,
       appBar: AppBar(
         backgroundColor: AppThemes.backgroundCream,
         elevation: 0,
         leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/back_icon.png',
-            width: 24,
-            height: 24,
-          ),
+          icon: Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Container(
@@ -70,31 +80,10 @@ class _FruitsViewState extends State<FruitsView> {
             controller: _searchController,
             decoration: InputDecoration(
               hintText: 'Find Your Needs',
-              suffixIcon: IconButton(
-                icon: Icon(Icons.search, color: Colors.grey[600]),
-                onPressed: () {
-                  final query = _searchController.text.trim();
-                  if (query.isNotEmpty) {
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.searchResults,
-                      arguments: {'query': query},
-                    );
-                  }
-                },
-              ),
+              suffixIcon: Icon(Icons.search, color: Colors.grey[600]),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
-            onSubmitted: (value) {
-              if (value.trim().isNotEmpty) {
-                Navigator.pushNamed(
-                  context,
-                  AppRoutes.searchResults,
-                  arguments: {'query': value.trim()},
-                );
-              }
-            },
           ),
         ),
       ),
@@ -125,7 +114,7 @@ class _FruitsViewState extends State<FruitsView> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _products.isEmpty
+                : uniqueNames.isEmpty
                     ? const Center(child: Text('No fruits available'))
                     : Padding(
                         padding: const EdgeInsets.all(12.0),
@@ -134,11 +123,53 @@ class _FruitsViewState extends State<FruitsView> {
                             crossAxisCount: 2,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
-                            childAspectRatio: 0.75,
+                            childAspectRatio: 0.95,
                           ),
-                          itemCount: _products.length,
+                          itemCount: uniqueNames.length,
                           itemBuilder: (context, index) {
-                            return _buildProductCard(_products[index]);
+                            final fruitName = uniqueNames[index];
+                            return GestureDetector(
+                              onTap: () {
+                                // TODO: Navigate to farmers selling this fruit
+                              },
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.asset(
+                                        _getFruitImage(fruitName),
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (c, e, s) => Container(
+                                          color: Colors.grey[200],
+                                          child: const Center(child: Icon(Icons.image, size: 48)),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                    decoration: BoxDecoration(
+                                      color: AppThemes.primaryGreen,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      _capitalize(fruitName),
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
                           },
                         ),
                       ),
@@ -148,116 +179,8 @@ class _FruitsViewState extends State<FruitsView> {
     );
   }
 
-  Widget _buildProductCard(ProductModel product) {
-    return Builder(
-      builder: (context) => GestureDetector(
-        onTap: () {
-          Navigator.pushNamed(
-            context,
-            AppRoutes.productDetail,
-            arguments: {'product': product},
-          );
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: product.imageUrl.isNotEmpty
-                    ? Image.network(
-                        product.imageUrl,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                            ),
-                          );
-                        },
-                        errorBuilder: (c, e, s) => Container(
-                          color: Colors.grey[200],
-                          child: const Center(child: Icon(Icons.image, size: 48)),
-                        ),
-                      )
-                    : Container(
-                        color: Colors.grey[200],
-                        child: const Center(child: Icon(Icons.image, size: 48)),
-                      ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppThemes.primaryGreen,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    product.name,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Rs ${product.price.toStringAsFixed(2)}/${product.unit}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 28,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        _cartService.addToCart(product);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${product.name} added to cart'),
-                            duration: const Duration(seconds: 2),
-                            action: SnackBarAction(
-                              label: 'VIEW',
-                              textColor: Colors.white,
-                              onPressed: () {
-                                Navigator.pushNamed(context, AppRoutes.cart);
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.add_shopping_cart, size: 14),
-                      label: const Text('Add', style: TextStyle(fontSize: 11)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppThemes.primaryGreen,
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  String _capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1);
   }
 }

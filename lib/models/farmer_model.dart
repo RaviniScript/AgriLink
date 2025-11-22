@@ -29,6 +29,20 @@ class Farmer {
 
   // Convert from Firestore document
   factory Farmer.fromFirestore(Map<String, dynamic> data, String docId) {
+    // Handle joinedDate - could be DateTime or Timestamp
+    DateTime parsedDate = DateTime.now();
+    if (data['joinedDate'] != null) {
+      if (data['joinedDate'] is DateTime) {
+        parsedDate = data['joinedDate'];
+      } else {
+        try {
+          parsedDate = data['joinedDate'].toDate();
+        } catch (e) {
+          parsedDate = DateTime.now();
+        }
+      }
+    }
+    
     return Farmer(
       id: docId,
       name: data['name'] ?? '',
@@ -41,7 +55,7 @@ class Farmer {
       totalProducts: data['totalProducts'] ?? 0,
       totalSales: data['totalSales'] ?? 0,
       isVerified: data['isVerified'] ?? false,
-      joinedDate: data['joinedDate']?.toDate() ?? DateTime.now(),
+      joinedDate: parsedDate,
     );
   }
 

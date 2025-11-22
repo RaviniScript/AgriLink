@@ -14,23 +14,25 @@ class AddCropsView extends StatefulWidget {
 }
 
 class _AddCropsViewState extends State<AddCropsView> {
-  File? _selectedImage;
+  List<File> _selectedImages = []; // Changed to list for multiple images
   bool _isLoading = false;
-  String _selectedCategory = 'Vegetable';
-  String? _selectedCropName;
+  String _selectedCategory = 'vegetables'; // Match buyer categories (lowercase, plural)
+  String _selectedUnit = 'kg'; // Default unit
+  final TextEditingController _cropNameController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController(text: '100');
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
 
-  final List<String> _categories = ['Vegetable', 'Fruit', 'Grain', 'Legume'];
-  final Map<String, List<String>> _cropsByCategory = {
-    'Vegetable': ['Carrot', 'Tomato', 'Cucumber', 'Broccoli', 'Cabbage'],
-    'Fruit': ['Apple', 'Banana', 'Orange', 'Mango', 'Grapes', 'Strawberry', 'Pineapple'],
-    'Grain': ['Rice', 'Wheat', 'Corn', 'Barley', 'Oats'],
-    'Legume': ['Lentils', 'Chickpeas', 'Beans', 'Peas', 'Soybeans'],
-  };
+  final List<String> _categories = ['vegetables', 'fruits']; // Match buyer categories
+  final List<String> _units = ['kg', 'g'];
+  final int maxImages = 5; // Maximum 5 images allowed
 
   Future<void> _pickImageFromCamera() async {
+    if (_selectedImages.length >= maxImages) {
+      _showMessage('Maximum $maxImages images allowed');
+      return;
+    }
+    
     try {
       final picker = ImagePicker();
       final image = await picker.pickImage(
@@ -41,7 +43,7 @@ class _AddCropsViewState extends State<AddCropsView> {
       );
 
       if (image != null) {
-        setState(() => _selectedImage = File(image.path));
+        setState(() => _selectedImages.add(File(image.path)));
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -51,23 +53,43 @@ class _AddCropsViewState extends State<AddCropsView> {
   }
 
   Future<void> _pickImageFromGallery() async {
+    if (_selectedImages.length >= maxImages) {
+      _showMessage('Maximum $maxImages images allowed');
+      return;
+    }
+    
     try {
       final picker = ImagePicker();
-      final image = await picker.pickImage(
-        source: ImageSource.gallery,
+      final images = await picker.pickMultiImage(
         maxWidth: 1080,
         maxHeight: 1080,
         imageQuality: 85,
       );
 
-      if (image != null) {
-        setState(() => _selectedImage = File(image.path));
+      if (images.isNotEmpty) {
+        setState(() {
+          for (var image in images) {
+            if (_selectedImages.length < maxImages) {
+              _selectedImages.add(File(image.path));
+            }
+          }
+        });
+        
+        if (images.length > maxImages - (_selectedImages.length - images.length)) {
+          _showMessage('Added ${images.length} images. Maximum $maxImages images allowed');
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error picking image: $e')),
       );
     }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+    });
   }
 
   void _showImageSourceDialog() {
@@ -111,13 +133,18 @@ class _AddCropsViewState extends State<AddCropsView> {
   }
 
   void _handleAdd() async {
-    if (_selectedImage == null) {
-      _showMessage('Please select an image');
+    if (_selectedImages.isEmpty) {
+      _showMessage('Please select at least one image');
       return;
     }
 
-    if (_selectedCropName == null) {
-      _showMessage('Please select a crop name');
+    if (_selectedImages.length < 3) {
+      _showMessage('Please add at least 3 images for better presentation');
+      return;
+    }
+
+    if (_cropNameController.text.trim().isEmpty) {
+      _showMessage('Please enter a crop name');
       return;
     }
 
@@ -140,12 +167,16 @@ class _AddCropsViewState extends State<AddCropsView> {
       final vm = Provider.of<CropViewModel>(context, listen: false);
       final qty = double.tryParse(_quantityController.text) ?? 0.0;
       final amt = double.tryParse(_amountController.text) ?? 0.0;
+      
+      // First image is the main image, rest are additional
       await vm.addCrop(
-        name: _selectedCropName ?? '',
+        name: _cropNameController.text.trim(),
         category: _selectedCategory,
         quantity: qty,
+        unit: _selectedUnit,
         amount: amt,
-        imageFile: _selectedImage!,
+        imageFile: _selectedImages.first,
+        additionalImages: _selectedImages.length > 1 ? _selectedImages.sublist(1) : null,
         city: _cityController.text.trim(),
         ownerId: ownerId,
       );
@@ -233,68 +264,153 @@ class _AddCropsViewState extends State<AddCropsView> {
 
           const SizedBox(height: 20),
 
-          // ---------------- IMAGE PICKER ----------------
-          GestureDetector(
-            onTap: _showImageSourceDialog,
-            child: Stack(
+          // ---------------- MULTIPLE IMAGES PICKER ----------------
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 130,
-                  height: 130,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: _selectedImage != null
-                        ? Image.file(_selectedImage!, fit: BoxFit.cover)
-                        : Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.grey[100]!, Colors.grey[50]!],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.image_outlined,
-                        size: 50,
-                        color: Colors.grey[400],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Crop Images (${_selectedImages.length}/$maxImages)',
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      'Min 3 images',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _selectedImages.length >= 3 ? AppColors.success : Colors.orange,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ),
+                  ],
                 ),
-
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 120,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _selectedImages.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == _selectedImages.length) {
+                        // Add image button
+                        return GestureDetector(
+                          onTap: _selectedImages.length < maxImages ? _showImageSourceDialog : null,
+                          child: Container(
+                            width: 120,
+                            margin: const EdgeInsets.only(right: 12),
+                            decoration: BoxDecoration(
+                              color: _selectedImages.length < maxImages 
+                                  ? const Color(0xFFE8F5E9)
+                                  : Colors.grey[300],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.primary.withOpacity(0.3),
+                                width: 2,
+                                style: BorderStyle.solid,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.add_photo_alternate,
+                                  size: 40,
+                                  color: _selectedImages.length < maxImages 
+                                      ? AppColors.primary 
+                                      : Colors.grey,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _selectedImages.length < maxImages 
+                                      ? 'Add Photo' 
+                                      : 'Max Reached',
+                                  style: TextStyle(
+                                    color: _selectedImages.length < maxImages 
+                                        ? AppColors.primary 
+                                        : Colors.grey,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+                      
+                      // Display selected image
+                      return Stack(
+                        children: [
+                          Container(
+                            width: 120,
+                            margin: const EdgeInsets.only(right: 12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: index == 0 ? AppColors.primary : Colors.grey[300]!,
+                                width: index == 0 ? 3 : 2,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.file(
+                                _selectedImages[index],
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          if (index == 0)
+                            Positioned(
+                              top: 4,
+                              left: 4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Text(
+                                  'Main',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          Positioned(
+                            top: 4,
+                            right: 16,
+                            child: GestureDetector(
+                              onTap: () => _removeImage(index),
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],
             ),
           ),
+
+          const SizedBox(height: 20),
 
           // ---------------- FORM CONTENT ----------------
           Expanded(
@@ -314,7 +430,6 @@ class _AddCropsViewState extends State<AddCropsView> {
                       onChanged: (value) {
                         setState(() {
                           _selectedCategory = value!;
-                          _selectedCropName = null;
                         });
                       },
                     ),
@@ -324,19 +439,14 @@ class _AddCropsViewState extends State<AddCropsView> {
                     const Text('Crop Name',
                         style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
-                    _buildDropdown<String>(
-                      value: _selectedCropName,
-                      hint: 'Select crop name',
-                      items: _cropsByCategory[_selectedCategory]!,
-                      onChanged: (value) => setState(() => _selectedCropName = value),
-                    ),
+                    _buildTextFieldForName(_cropNameController, hint: 'Enter crop name'),
                     const SizedBox(height: 20),
 
                     // CITY
                     const Text('City',
                         style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
-                    _buildTextField(_cityController, hint: 'Enter city name'),
+                    _buildTextFieldForName(_cityController, hint: 'Enter city name'),
                     const SizedBox(height: 20),
 
                     // QUANTITY
@@ -347,7 +457,7 @@ class _AddCropsViewState extends State<AddCropsView> {
                       children: [
                         Expanded(child: _buildTextField(_quantityController)),
                         const SizedBox(width: 12),
-                        _unitBox('kg'),
+                        _buildUnitDropdown(),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -359,7 +469,8 @@ class _AddCropsViewState extends State<AddCropsView> {
                     Row(
                       children: [
                         _unitBox('Rs'),
-                        Expanded(child: _buildTextField(_amountController, hint: "Per 1kg")),
+                        const SizedBox(width: 12),
+                        Expanded(child: _buildTextField(_amountController, hint: "Per 1$_selectedUnit")),
                       ],
                     ),
                     const SizedBox(height: 40),
@@ -418,7 +529,10 @@ class _AddCropsViewState extends State<AddCropsView> {
         items: items
             .map((item) => DropdownMenuItem<T>(
           value: item,
-          child: Text(item.toString()),
+          child: Text(
+            // Capitalize first letter for display
+            item.toString()[0].toUpperCase() + item.toString().substring(1)
+          ),
         ))
             .toList(),
         onChanged: onChanged,
@@ -444,6 +558,25 @@ class _AddCropsViewState extends State<AddCropsView> {
     );
   }
 
+  Widget _buildTextFieldForName(TextEditingController controller, {String? hint}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F0F0),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: TextInputType.text,
+        textCapitalization: TextCapitalization.words,
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          hintText: hint,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+      ),
+    );
+  }
+
   Widget _unitBox(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -453,6 +586,38 @@ class _AddCropsViewState extends State<AddCropsView> {
       ),
       child: Text(text,
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+    );
+  }
+
+  Widget _buildUnitDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.primary, width: 2),
+      ),
+      child: DropdownButton<String>(
+        value: _selectedUnit,
+        underline: const SizedBox(),
+        dropdownColor: Colors.white,
+        style: const TextStyle(
+          color: AppColors.primary,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+        items: _units.map((unit) {
+          return DropdownMenuItem<String>(
+            value: unit,
+            child: Text(unit),
+          );
+        }).toList(),
+        onChanged: (value) {
+          setState(() {
+            _selectedUnit = value!;
+          });
+        },
+      ),
     );
   }
 
@@ -478,6 +643,7 @@ class _AddCropsViewState extends State<AddCropsView> {
 
   @override
   void dispose() {
+    _cropNameController.dispose();
     _quantityController.dispose();
     _amountController.dispose();
     _cityController.dispose();

@@ -163,16 +163,12 @@ class _FarmersListViewState extends State<FarmersListView> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            // Navigate to farmer profile screen
+            // Navigate to farmer's all products view
             Navigator.pushNamed(
               context,
-              AppRoutes.farmerProfile,
+              AppRoutes.farmerAllProducts,
               arguments: {
-                'farmerId': farmer.id,
-                'farmerName': farmer.name,
-                'location': farmer.location,
-                'phone': farmer.phone,
-                'image': farmer.profileImageUrl,
+                'farmer': farmer,
               },
             );
           },
