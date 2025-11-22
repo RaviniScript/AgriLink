@@ -178,11 +178,13 @@ class _MyCropsViewState extends State<MyCropsView> {
       MaterialPageRoute(
         builder: (context) => UpdateCropsView(cropData: {
           'id': crop.id,
+          'ownerId': crop.ownerId,
           'name': crop.name,
           'imageUrl': crop.imageUrl,
           'category': crop.category,
           'quantity': crop.quantity,
           'amount': crop.amount,
+          'city': crop.city,
         }),
       ),
     );

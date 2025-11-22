@@ -8,6 +8,7 @@ class CropModel {
   final double quantity;
   final double amount;
   final String imageUrl;
+  final String city;
   final DateTime createdAt;
 
   CropModel({
@@ -18,6 +19,7 @@ class CropModel {
     required this.quantity,
     required this.amount,
     required this.imageUrl,
+    required this.city,
     required this.createdAt,
   });
 
@@ -31,6 +33,7 @@ class CropModel {
       quantity: (data['quantity'] ?? 0).toDouble(),
       amount: (data['amount'] ?? 0).toDouble(),
       imageUrl: data['imageUrl'] ?? '',
+      city: data['city'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
@@ -43,6 +46,7 @@ class CropModel {
       'quantity': quantity,
       'amount': amount,
       'imageUrl': imageUrl,
+      'city': city,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }

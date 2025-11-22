@@ -33,8 +33,12 @@ class CropRepository {
   Stream<List<CropModel>> streamCropsByOwner(String ownerId) {
     return _cropsCollection
         .where('ownerId', isEqualTo: ownerId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs.map((d) => CropModel.fromDocument(d)).toList());
+        .map((snap) {
+          final crops = snap.docs.map((d) => CropModel.fromDocument(d)).toList();
+          // Sort in memory to avoid Firestore index requirement
+          crops.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return crops;
+        });
   }
 }

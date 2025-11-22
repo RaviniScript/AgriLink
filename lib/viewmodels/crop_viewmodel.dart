@@ -23,6 +23,7 @@ class CropViewModel extends ChangeNotifier {
     required double quantity,
     required double amount,
     required File imageFile,
+    required String city,
     String? ownerId,
   }) async {
     final user = _auth.currentUser;
@@ -36,6 +37,7 @@ class CropViewModel extends ChangeNotifier {
       quantity: quantity,
       amount: amount,
       imageUrl: imageUrl,
+      city: city,
       createdAt: DateTime.now(),
     );
     await _repo.createCrop(crop);
@@ -43,5 +45,38 @@ class CropViewModel extends ChangeNotifier {
 
   Future<void> deleteCrop(String id) async {
     await _repo.deleteCrop(id);
+  }
+
+  Future<void> updateCrop({
+    required String id,
+    required String ownerId,
+    required String name,
+    required String category,
+    required double quantity,
+    required double amount,
+    required String city,
+    required String currentImageUrl,
+    File? newImageFile,
+  }) async {
+    String imageUrl = currentImageUrl;
+    
+    // Upload new image if provided
+    if (newImageFile != null) {
+      imageUrl = await _repo.uploadImage(newImageFile, ownerId);
+    }
+    
+    final crop = CropModel(
+      id: id,
+      ownerId: ownerId,
+      name: name,
+      category: category,
+      quantity: quantity,
+      amount: amount,
+      imageUrl: imageUrl,
+      city: city,
+      createdAt: DateTime.now(), // This won't be updated in Firestore since we use update()
+    );
+    
+    await _repo.updateCrop(crop);
   }
 }

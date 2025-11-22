@@ -20,11 +20,12 @@ class _AddCropsViewState extends State<AddCropsView> {
   String? _selectedCropName;
   final TextEditingController _quantityController = TextEditingController(text: '100');
   final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
 
   final List<String> _categories = ['Vegetable', 'Fruit', 'Grain', 'Legume'];
   final Map<String, List<String>> _cropsByCategory = {
-    'Vegetable': ['Carrot', 'Tomato', 'Potato', 'Onion', 'Cabbage'],
-    'Fruit': ['Apple', 'Banana', 'Orange', 'Mango', 'Grapes'],
+    'Vegetable': ['Carrot', 'Tomato', 'Cucumber', 'Broccoli', 'Cabbage'],
+    'Fruit': ['Apple', 'Banana', 'Orange', 'Mango', 'Grapes', 'Strawberry', 'Pineapple'],
     'Grain': ['Rice', 'Wheat', 'Corn', 'Barley', 'Oats'],
     'Legume': ['Lentils', 'Chickpeas', 'Beans', 'Peas', 'Soybeans'],
   };
@@ -125,6 +126,11 @@ class _AddCropsViewState extends State<AddCropsView> {
       return;
     }
 
+    if (_cityController.text.trim().isEmpty) {
+      _showMessage('Please enter city');
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -140,6 +146,7 @@ class _AddCropsViewState extends State<AddCropsView> {
         quantity: qty,
         amount: amt,
         imageFile: _selectedImage!,
+        city: _cityController.text.trim(),
         ownerId: ownerId,
       );
 
@@ -271,7 +278,7 @@ class _AddCropsViewState extends State<AddCropsView> {
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppColors.info,
+                      color: AppColors.primary,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 3),
                       boxShadow: [
@@ -323,6 +330,13 @@ class _AddCropsViewState extends State<AddCropsView> {
                       items: _cropsByCategory[_selectedCategory]!,
                       onChanged: (value) => setState(() => _selectedCropName = value),
                     ),
+                    const SizedBox(height: 20),
+
+                    // CITY
+                    const Text('City',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    _buildTextField(_cityController, hint: 'Enter city name'),
                     const SizedBox(height: 20),
 
                     // QUANTITY
@@ -466,6 +480,7 @@ class _AddCropsViewState extends State<AddCropsView> {
   void dispose() {
     _quantityController.dispose();
     _amountController.dispose();
+    _cityController.dispose();
     super.dispose();
   }
 }

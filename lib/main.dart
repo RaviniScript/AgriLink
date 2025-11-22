@@ -6,6 +6,8 @@ import 'package:agri_link/routes/route_generator.dart';
 import 'package:agri_link/routes/app_routes.dart';
 import 'package:provider/provider.dart';
 import 'package:agri_link/viewmodels/crop_viewmodel.dart';
+import 'package:agri_link/viewmodels/user_viewmodel.dart';
+import 'package:agri_link/viewmodels/payment_card_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +30,8 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => CropViewModel()),
+        ChangeNotifierProvider(create: (_) => UserViewModel()),
+        ChangeNotifierProvider(create: (_) => PaymentCardViewModel()),
       ],
       child: MaterialApp(
         title: 'AgriLink App',
@@ -40,3 +44,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+

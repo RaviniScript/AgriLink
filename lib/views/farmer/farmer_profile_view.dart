@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_themes.dart';
 import '../../widgets/common/custom_bottom_nav_bar.dart';
+import '../../viewmodels/user_viewmodel.dart';
+import '../../models/user_model.dart';
 
 class FarmerProfileView extends StatefulWidget {
   const FarmerProfileView({Key? key}) : super(key: key);
@@ -18,46 +21,42 @@ class _FarmerProfileViewState extends State<FarmerProfileView> {
   final ImagePicker _picker = ImagePicker();
 
   // Controllers for editable fields
-  late TextEditingController _nameController;
+  late TextEditingController _firstNameController;
+  late TextEditingController _lastNameController;
   late TextEditingController _contactController;
   late TextEditingController _emailController;
   late TextEditingController _addressController;
-  late TextEditingController _nicController;
 
-  // You'll need to fetch these from your authentication/database service
-  // For now, they're initialized in initState
   @override
   void initState() {
     super.initState();
-    _loadFarmerData();
+    _firstNameController = TextEditingController();
+    _lastNameController = TextEditingController();
+    _contactController = TextEditingController();
+    _emailController = TextEditingController();
+    _addressController = TextEditingController();
+    
+    // Load user data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<UserViewModel>().loadCurrentUser();
+    });
   }
 
-  void _loadFarmerData() {
-    // TODO: Fetch farmer data from your backend/database
-    // Example: Get from Firebase Auth, SharedPreferences, or API
-    // For now, initializing with empty controllers
-    _nameController = TextEditingController(text: '');
-    _contactController = TextEditingController(text: '');
-    _emailController = TextEditingController(text: '');
-    _addressController = TextEditingController(text: '');
-    _nicController = TextEditingController(text: '');
-
-    // TODO: Add this code to fetch data:
-    // final userData = await _authService.getCurrentFarmerData();
-    // _nameController.text = userData['name'] ?? '';
-    // _contactController.text = userData['contact'] ?? '';
-    // _emailController.text = userData['email'] ?? '';
-    // _addressController.text = userData['address'] ?? '';
-    // _nicController.text = userData['nic'] ?? '';
+  void _loadUserData(UserModel user) {
+    _firstNameController.text = user.firstName;
+    _lastNameController.text = user.lastName;
+    _contactController.text = user.phoneNumber ?? '';
+    _emailController.text = user.email;
+    _addressController.text = user.address;
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _contactController.dispose();
     _emailController.dispose();
     _addressController.dispose();
-    _nicController.dispose();
     super.dispose();
   }
 
@@ -74,37 +73,65 @@ class _FarmerProfileViewState extends State<FarmerProfileView> {
         setState(() {
           _profileImage = File(image.path);
         });
-        // TODO: Upload image to storage
-        // await _uploadProfileImage(_profileImage!);
+        
+        // Upload image to Firebase
+        final viewModel = context.read<UserViewModel>();
+        final success = await viewModel.uploadProfileImage(_profileImage!);
+        
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile image updated successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(viewModel.errorMessage ?? 'Failed to upload image'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to pick image: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick image: $e')),
+        );
+      }
     }
   }
 
   Future<void> _saveProfile() async {
-    // TODO: Save updated profile data to backend
-    // Example:
-    // await _authService.updateFarmerProfile({
-    //   'name': _nameController.text,
-    //   'contact': _contactController.text,
-    //   'email': _emailController.text,
-    //   'address': _addressController.text,
-    //   'nic': _nicController.text,
-    // });
-
-    setState(() {
-      _isEditing = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Profile updated successfully'),
-        backgroundColor: Colors.green,
-      ),
+    final viewModel = context.read<UserViewModel>();
+    
+    final success = await viewModel.updateProfile(
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
+      address: _addressController.text.trim(),
+      phoneNumber: _contactController.text.trim(),
     );
+
+    if (success && mounted) {
+      setState(() {
+        _isEditing = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(viewModel.errorMessage ?? 'Failed to update profile'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _onNavItemTapped(int index) {
@@ -131,33 +158,46 @@ class _FarmerProfileViewState extends State<FarmerProfileView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      body: Column(
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 20),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
+    return Consumer<UserViewModel>(
+      builder: (context, viewModel, child) {
+        final user = viewModel.currentUser;
+        
+        // Load user data into controllers when user data is available
+        if (user != null && _firstNameController.text.isEmpty) {
+          _loadUserData(user);
+        }
+        
+        return Scaffold(
+          backgroundColor: const Color(0xFFFAFAFA),
+          body: viewModel.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
                   children: [
-                    _buildProfileAvatar(),
-                    const SizedBox(height: 32),
-                    _buildProfileForm(),
-                    const SizedBox(height: 24),
+                    _buildHeader(),
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            children: [
+                              _buildProfileAvatar(user),
+                              const SizedBox(height: 32),
+                              _buildProfileForm(),
+                              const SizedBox(height: 24),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ),
+          bottomNavigationBar: CustomBottomNavBar(
+            currentIndex: _selectedNavIndex,
+            onTap: _onNavItemTapped,
           ),
-        ],
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _selectedNavIndex,
-        onTap: _onNavItemTapped,
-      ),
+        );
+      },
     );
   }
 
@@ -216,7 +256,9 @@ class _FarmerProfileViewState extends State<FarmerProfileView> {
     );
   }
 
-  Widget _buildProfileAvatar() {
+  Widget _buildProfileAvatar(UserModel? user) {
+    final imageUrl = user?.profileImageUrl;
+    
     return Stack(
       children: [
         Container(
@@ -235,8 +277,8 @@ class _FarmerProfileViewState extends State<FarmerProfileView> {
             backgroundColor: Colors.grey[300],
             backgroundImage: _profileImage != null
                 ? FileImage(_profileImage!)
-                : null,
-            child: _profileImage == null
+                : (imageUrl != null ? NetworkImage(imageUrl) : null) as ImageProvider?,
+            child: (_profileImage == null && imageUrl == null)
                 ? Icon(
               Icons.person,
               size: 60,
@@ -308,7 +350,8 @@ class _FarmerProfileViewState extends State<FarmerProfileView> {
                     setState(() {
                       _isEditing = false;
                     });
-                    _loadFarmerData(); // Reload original data
+                    // Reload user data
+                    context.read<UserViewModel>().loadCurrentUser();
                   },
                   child: const Text('Cancel'),
                   style: TextButton.styleFrom(
@@ -332,7 +375,9 @@ class _FarmerProfileViewState extends State<FarmerProfileView> {
             ],
           ),
           const SizedBox(height: 16),
-          _buildFormField('Name', _nameController, Icons.person_outline),
+          _buildFormField('First Name', _firstNameController, Icons.person_outline),
+          const SizedBox(height: 16),
+          _buildFormField('Last Name', _lastNameController, Icons.person_outline),
           const SizedBox(height: 16),
           _buildFormField(
             'Contact Number',
@@ -346,11 +391,10 @@ class _FarmerProfileViewState extends State<FarmerProfileView> {
             _emailController,
             Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
+            enabled: false, // Email cannot be changed
           ),
           const SizedBox(height: 16),
           _buildFormField('Address', _addressController, Icons.location_on_outlined),
-          const SizedBox(height: 16),
-          _buildFormField('NIC', _nicController, Icons.badge_outlined),
         ],
       ),
     );
@@ -361,6 +405,7 @@ class _FarmerProfileViewState extends State<FarmerProfileView> {
       TextEditingController controller,
       IconData icon, {
         TextInputType keyboardType = TextInputType.text,
+        bool enabled = true,
       }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,7 +426,7 @@ class _FarmerProfileViewState extends State<FarmerProfileView> {
           ),
           child: TextField(
             controller: controller,
-            enabled: _isEditing,
+            enabled: _isEditing && enabled,
             keyboardType: keyboardType,
             style: const TextStyle(
               fontSize: 15,
