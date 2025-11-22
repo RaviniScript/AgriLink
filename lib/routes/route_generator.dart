@@ -3,8 +3,8 @@ import 'package:agri_link/routes/app_routes.dart';
 
 // Import views used by the app
 import 'package:agri_link/views/common/splash_view.dart';
-// hide AppRoutes from onboarding_view to avoid duplicate AppRoutes symbol
 import 'package:agri_link/views/common/onboarding_view.dart' hide AppRoutes;
+import 'package:agri_link/views/common/home_selector_view.dart';
 import 'package:agri_link/views/auth/welcome_view.dart' show WelcomeView;
 import 'package:agri_link/views/auth/register_view.dart';
 import 'package:agri_link/views/auth/login_view.dart';
@@ -35,10 +35,8 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const SplashView());
       case AppRoutes.onboarding:
         return MaterialPageRoute(builder: (_) => const OnboardingView());
-      // *** THIS IS THE CORRECT ROUTE MAPPING ***
       case AppRoutes.welcome:
         return MaterialPageRoute(builder: (_) => const WelcomeView());
-      // *****************************************
       case AppRoutes.register:
         return MaterialPageRoute(builder: (_) => const RegisterView());
       case AppRoutes.login:
@@ -46,7 +44,7 @@ class RouteGenerator {
       case AppRoutes.roleSelection:
         return MaterialPageRoute(builder: (_) => const RoleSelectionView());
       case AppRoutes.homeSelector:
-        return MaterialPageRoute(builder: (_) => const Scaffold(body: Center(child: Text('Home selector (not implemented)'))));
+        return MaterialPageRoute(builder: (_) => const HomeSelectorView());
       case AppRoutes.farmerHome:
         return MaterialPageRoute(builder: (_) => const FarmerHomeView());
       case AppRoutes.buyerHome:

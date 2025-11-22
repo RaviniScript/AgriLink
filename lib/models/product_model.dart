@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ProductModel {
   final String id;
   final String name;
-  final String description;
+  final String? description;
   final double price;
   final String unit; // kg, g, bunch, piece, etc.
   final String category; // vegetables, fruits
@@ -19,7 +21,7 @@ class ProductModel {
   ProductModel({
     required this.id,
     required this.name,
-    required this.description,
+    this.description,
     required this.price,
     required this.unit,
     required this.category,
@@ -120,5 +122,3 @@ class ProductModel {
     };
   }
 }
-
-
