@@ -10,7 +10,7 @@ class BuyerViewModel extends ChangeNotifier {
 
   List<ProductModel> _products = [];
   List<OrderModel> _orders = [];
-  List<ProductModel> _cart = [];
+  final List<ProductModel> _cart = [];
   bool _isLoading = false;
   String? _errorMessage;
 

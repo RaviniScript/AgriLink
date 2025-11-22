@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class FruitDetailsView extends StatefulWidget {
-  const FruitDetailsView({Key? key}) : super(key: key);
+  const FruitDetailsView({super.key});
 
   @override
   State<FruitDetailsView> createState() => _FruitDetailsViewState();

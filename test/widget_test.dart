@@ -27,4 +27,11 @@ void main() {
     expect(find.text('0'), findsNothing);
     expect(find.text('1'), findsOneWidget);
   });
+
+  testWidgets('MyApp builds MaterialApp', (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    // The app should contain a MaterialApp widget
+    expect(find.byType(MaterialApp), findsOneWidget);
+  });
 }

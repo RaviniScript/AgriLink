@@ -5,7 +5,7 @@ import 'package:agri_link/models/cart_item_model.dart';
 import 'package:agri_link/core/constants/app_themes.dart';
 
 class CartView extends StatefulWidget {
-  const CartView({Key? key}) : super(key: key);
+  const CartView({super.key});
 
   @override
   State<CartView> createState() => _CartViewState();
