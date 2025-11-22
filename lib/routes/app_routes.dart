@@ -13,11 +13,11 @@ import 'package:agri_link/views/farmer/stock_history_view.dart';
 class AppRoutes {
   // General
   static const String splash = '/';
+  static const String welcome = '/welcome';
   static const String onboarding = '/onboarding';
   static const String homeSelector = '/homeSelector';
 
   // Auth
-  static const String welcome = '/welcome';
   static const String login = '/login';
   static const String password = '/password';
   static const String register = '/register';
@@ -58,9 +58,22 @@ class AppRoutes {
   static const String vegetables = '/vegetables';
   static const String vegetablesList = '/vegetablesList';
   static const String vegetableDetails = '/vegetableDetails';
+  static const String farmersList = '/farmersList';
+  static const String farmerAllProducts = '/farmerAllProducts';
+  static const String productFarmers = '/productFarmers';
+  static const String farmerProducts = '/farmerProducts';
+  static const String buyerProfile = '/buyerProfile';
+  static const String searchResults = '/searchResults';
+  static const String productDetail = '/productDetail';
+  static const String checkout = '/checkout';
+  static const String placeOrder = '/placeOrder';
+  static const String orderConfirmation = '/orderConfirmation';
+  static const String orderHistory = '/orderHistory';
+  static const String trackOrder = '/trackOrder';
   static const String cart = '/cart';
   static const String buyerOrders = '/buyerOrders';
-
+  static const String favorites = '/favorites';
+  
   // Delivery
   static const String deliveryHome = '/deliveryHome';
   static const String deliveryOrderList = '/deliveryOrderList';

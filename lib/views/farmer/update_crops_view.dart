@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../core/constants/app_themes.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/crop_viewmodel.dart';
 
 class UpdateCropsView extends StatefulWidget {
   final Map<String, dynamic> cropData;
@@ -19,11 +21,13 @@ class _UpdateCropsViewState extends State<UpdateCropsView> {
   String? _selectedCropName;
   late TextEditingController _quantityController;
   late TextEditingController _amountController;
+  late TextEditingController _cityController;
+  bool _isLoading = false;
 
   final List<String> _categories = ['Vegetable', 'Fruit', 'Grain', 'Legume'];
   final Map<String, List<String>> _cropsByCategory = {
-    'Vegetable': ['Carrot', 'Tomato', 'Potato', 'Onion', 'Cabbage'],
-    'Fruit': ['Apple', 'Banana', 'Orange', 'Mango', 'Grapes'],
+    'Vegetable': ['Carrot', 'Tomato', 'Cucumber', 'Broccoli', 'Cabbage'],
+    'Fruit': ['Apple', 'Banana', 'Orange', 'Mango', 'Grapes', 'Strawberry', 'Pineapple'],
     'Grain': ['Rice', 'Wheat', 'Corn', 'Barley', 'Oats'],
     'Legume': ['Lentils', 'Chickpeas', 'Beans', 'Peas', 'Soybeans'],
   };
@@ -55,6 +59,9 @@ class _UpdateCropsViewState extends State<UpdateCropsView> {
     );
     _amountController = TextEditingController(
       text: widget.cropData['amount']?.toString() ?? '',
+    );
+    _cityController = TextEditingController(
+      text: widget.cropData['city']?.toString() ?? '',
     );
   }
 
@@ -138,7 +145,7 @@ class _UpdateCropsViewState extends State<UpdateCropsView> {
     );
   }
 
-  void _handleUpdate() {
+  void _handleUpdate() async {
     if (_selectedCropName == null || _selectedCropName!.isEmpty) {
       _showMessage('Please select a crop name');
       return;
@@ -149,19 +156,41 @@ class _UpdateCropsViewState extends State<UpdateCropsView> {
       return;
     }
 
-    // TODO: Call backend API to update crop
-    // final updatedData = {
-    //   'id': widget.cropData['id'],
-    //   'category': _selectedCategory,
-    //   'name': _selectedCropName,
-    //   'quantity': _quantityController.text,
-    //   'amount': _amountController.text,
-    //   'imageUrl': _selectedImage != null ? 'upload_new_image' : _imageUrl,
-    // };
-    // await YourBackendService.updateCrop(updatedData);
+    if (_cityController.text.trim().isEmpty) {
+      _showMessage('Please enter city');
+      return;
+    }
 
-    _showMessage('Crop updated successfully!', isSuccess: true);
-    Navigator.pop(context, true); // Return true to indicate update success
+    setState(() => _isLoading = true);
+
+    try {
+      final viewModel = context.read<CropViewModel>();
+      
+      await viewModel.updateCrop(
+        id: widget.cropData['id'],
+        ownerId: widget.cropData['ownerId'],
+        name: _selectedCropName!,
+        category: _selectedCategory,
+        quantity: double.tryParse(_quantityController.text) ?? 0,
+        amount: double.tryParse(_amountController.text) ?? 0,
+        city: _cityController.text.trim(),
+        currentImageUrl: _imageUrl ?? '',
+        newImageFile: _selectedImage,
+      );
+
+      if (mounted) {
+        _showMessage('Crop updated successfully!', isSuccess: true);
+        Navigator.pop(context, true); // Return true to indicate update success
+      }
+    } catch (e) {
+      if (mounted) {
+        _showMessage('Failed to update crop: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   void _showMessage(String msg, {bool isSuccess = false}) {
@@ -316,7 +345,7 @@ class _UpdateCropsViewState extends State<UpdateCropsView> {
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppColors.info,
+                      color: AppColors.primary,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 3),
                       boxShadow: [
@@ -398,6 +427,13 @@ class _UpdateCropsViewState extends State<UpdateCropsView> {
                         Expanded(child: _buildTextField(_amountController, hint: "Per 1kg")),
                       ],
                     ),
+                    const SizedBox(height: 20),
+
+                    // CITY
+                    const Text('City',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    _buildTextField(_cityController, hint: "Enter city name", isNumeric: false),
                     const SizedBox(height: 40),
 
                     // ---------------- BUTTONS ----------------
@@ -407,16 +443,37 @@ class _UpdateCropsViewState extends State<UpdateCropsView> {
                           child: _mainButton(
                             'Cancel',
                             AppColors.primary,
-                                () => Navigator.pop(context),
+                            _isLoading ? () {} : () => Navigator.pop(context),
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: _mainButton(
-                            'Update',
-                            AppColors.primaryDark,
-                            _handleUpdate,
-                          ),
+                          child: _isLoading
+                              ? ElevatedButton(
+                                  onPressed: () {},
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primaryDark,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  child: const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  ),
+                                )
+                              : _mainButton(
+                                  'Update',
+                                  AppColors.primaryDark,
+                                  _handleUpdate,
+                                ),
                         ),
                       ],
                     ),
@@ -472,7 +529,7 @@ class _UpdateCropsViewState extends State<UpdateCropsView> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, {String? hint}) {
+  Widget _buildTextField(TextEditingController controller, {String? hint, bool isNumeric = true}) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF0F0F0),
@@ -480,7 +537,7 @@ class _UpdateCropsViewState extends State<UpdateCropsView> {
       ),
       child: TextField(
         controller: controller,
-        keyboardType: TextInputType.number,
+        keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
         decoration: InputDecoration(
           border: InputBorder.none,
           hintText: hint,
@@ -525,6 +582,7 @@ class _UpdateCropsViewState extends State<UpdateCropsView> {
   void dispose() {
     _quantityController.dispose();
     _amountController.dispose();
+    _cityController.dispose();
     super.dispose();
   }
 }

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_themes.dart';
 import '../../widgets/common/custom_bottom_nav_bar.dart';
+import '../../viewmodels/payment_card_viewmodel.dart';
+import '../../models/payment_card_model.dart';
 
 class PaymentCard {
   final String id;
@@ -28,6 +31,19 @@ class PaymentCard {
     }
     return cardNumber;
   }
+
+  // Convert from PaymentCardModel
+  factory PaymentCard.fromModel(PaymentCardModel model) {
+    return PaymentCard(
+      id: model.id,
+      cardHolderName: model.cardHolderName,
+      cardNumber: model.cardNumber,
+      expiryMonth: model.expiryMonth,
+      expiryYear: model.expiryYear,
+      cvv: model.cvv,
+      cardType: model.cardType,
+    );
+  }
 }
 
 class FarmerAccountsView extends StatefulWidget {
@@ -45,26 +61,10 @@ class _FarmerAccountsViewState extends State<FarmerAccountsView> {
   @override
   void initState() {
     super.initState();
-    // TODO: Load saved cards from backend/storage
-    _loadCards();
-  }
-
-  void _loadCards() {
-    // TODO: Fetch from backend
-    // For now, you can test with sample data:
-    // setState(() {
-    //   _paymentCards = [
-    //     PaymentCard(
-    //       id: '1',
-    //       cardHolderName: 'Aruna Indika',
-    //       cardNumber: '1234567812345678',
-    //       expiryMonth: '12',
-    //       expiryYear: '25',
-    //       cvv: '123',
-    //       cardType: 'mastercard',
-    //     ),
-    //   ];
-    // });
+    // Load payment cards from Firebase
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<PaymentCardViewModel>().loadPaymentCards();
+    });
   }
 
   void _onNavItemTapped(int index) {
@@ -93,24 +93,44 @@ class _FarmerAccountsViewState extends State<FarmerAccountsView> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AddCardDialog(
-        onCardAdded: (card) {
-          setState(() {
-            _paymentCards.add(card);
-            // TODO: Save to backend
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Card added successfully'),
-              backgroundColor: AppColors.success,
-            ),
+      builder: (dialogContext) => AddCardDialog(
+        onCardAdded: (card) async {
+          final viewModel = context.read<PaymentCardViewModel>();
+          final scaffoldMessenger = ScaffoldMessenger.of(context);
+          final navigator = Navigator.of(dialogContext);
+          
+          final success = await viewModel.addPaymentCard(
+            cardHolderName: card.cardHolderName,
+            cardNumber: card.cardNumber,
+            expiryMonth: card.expiryMonth,
+            expiryYear: card.expiryYear,
+            cvv: card.cvv,
+            cardType: card.cardType,
           );
+
+          navigator.pop();
+          
+          if (success && mounted) {
+            scaffoldMessenger.showSnackBar(
+              const SnackBar(
+                content: Text('Card added successfully'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+          } else if (mounted) {
+            scaffoldMessenger.showSnackBar(
+              SnackBar(
+                content: Text(viewModel.errorMessage ?? 'Failed to add card'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
         },
       ),
     );
   }
 
-  void _deleteCard(int index) {
+  void _deleteCard(int index, String cardId) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -122,21 +142,27 @@ class _FarmerAccountsViewState extends State<FarmerAccountsView> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                _paymentCards.removeAt(index);
-                if (_selectedCardIndex == index) {
-                  _selectedCardIndex = null;
-                }
-                // TODO: Delete from backend
-              });
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Card deleted successfully'),
-                  backgroundColor: AppColors.error,
-                ),
-              );
+              
+              final viewModel = context.read<PaymentCardViewModel>();
+              final success = await viewModel.deletePaymentCard(cardId);
+              
+              if (success && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Card deleted successfully'),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(viewModel.errorMessage ?? 'Failed to delete card'),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+              }
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -147,50 +173,59 @@ class _FarmerAccountsViewState extends State<FarmerAccountsView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          _buildHeader(),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  if (_paymentCards.isEmpty)
+    return Consumer<PaymentCardViewModel>(
+      builder: (context, viewModel, child) {
+        // Convert PaymentCardModel to PaymentCard for UI
+        final cards = viewModel.cards.map((model) => PaymentCard.fromModel(model)).toList();
+        
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: viewModel.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                  children: [
+                    _buildHeader(),
                     Expanded(
-                      child: Center(
-                        child: Text(
-                          'No cards added yet',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 16,
-                          ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Column(
+                          children: [
+                            if (cards.isEmpty)
+                              Expanded(
+                                child: Center(
+                                  child: Text(
+                                    'No cards added yet',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              Expanded(
+                                child: ListView.builder(
+                                  itemCount: cards.length,
+                                  itemBuilder: (context, index) {
+                                    return _buildCardItem(cards[index], index, viewModel.cards[index].id);
+                                  },
+                                ),
+                              ),
+                            const SizedBox(height: 20),
+                            _buildAddButton(),
+                            const SizedBox(height: 20),
+                          ],
                         ),
                       ),
-                    )
-                  else
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: _paymentCards.length,
-                        itemBuilder: (context, index) {
-                          return _buildCardItem(index);
-                        },
-                      ),
                     ),
-                  const SizedBox(height: 20),
-                  _buildAddButton(),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
+                  ],
+                ),
+          bottomNavigationBar: CustomBottomNavBar(
+            currentIndex: _selectedNavIndex,
+            onTap: _onNavItemTapped,
           ),
-        ],
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _selectedNavIndex,
-        onTap: _onNavItemTapped,
-      ),
+        );
+      },
     );
   }
 
@@ -249,100 +284,72 @@ class _FarmerAccountsViewState extends State<FarmerAccountsView> {
     );
   }
 
-  Widget _buildCardItem(int index) {
-    final card = _paymentCards[index];
+  Widget _buildCardItem(PaymentCard card, int index, String cardId) {
     final isSelected = _selectedCardIndex == index;
 
-    return Dismissible(
-      key: Key(card.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          color: Colors.red,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(Icons.delete, color: Colors.white, size: 32),
-      ),
-      confirmDismiss: (direction) async {
-        return await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Delete Card'),
-            content: const Text('Are you sure you want to delete this card?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Delete', style: TextStyle(color: Colors.red)),
-              ),
-            ],
-          ),
-        );
-      },
-      onDismissed: (direction) {
+    return GestureDetector(
+      onTap: () {
         setState(() {
-          _paymentCards.removeAt(index);
-          if (_selectedCardIndex == index) {
-            _selectedCardIndex = null;
-          }
+          _selectedCardIndex = isSelected ? null : index;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Card deleted successfully'),
-            backgroundColor: AppColors.error,
-          ),
-        );
       },
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedCardIndex = isSelected ? null : index;
-          });
-        },
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFE8F5E9) : const Color(0xFFE0E0E0),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : Colors.transparent,
-              width: 2,
-            ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFE8F5E9) : const Color(0xFFE0E0E0),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            width: 2,
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 50,
-                height: 35,
+        ),
+        child: Row(
+          children: [
+            // Delete icon on the left
+            GestureDetector(
+              onTap: () => _deleteCard(index, cardId),
+              child: Container(
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.delete_outline,
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Center(
-                  child: _getCardLogo(card.cardType),
+                  size: 22,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  card.maskedCardNumber,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 1.5,
-                  ),
+            ),
+            const SizedBox(width: 16),
+            // Card logo
+            Container(
+              width: 50,
+              height: 35,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Center(
+                child: _getCardLogo(card.cardType),
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Card number
+            Expanded(
+              child: Text(
+                card.maskedCardNumber,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1.5,
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.black54),
-            ],
-          ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.black54),
+          ],
         ),
       ),
     );
@@ -442,7 +449,7 @@ class _AddCardDialogState extends State<AddCardDialog> {
       );
 
       widget.onCardAdded(card);
-      Navigator.pop(context);
+      // Don't pop here - the callback will handle it
     }
   }
 

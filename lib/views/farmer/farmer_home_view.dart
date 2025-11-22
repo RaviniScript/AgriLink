@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_themes.dart';
 import '../../widgets/common/custom_bottom_nav_bar.dart';
 import '../../routes/app_routes.dart';
 import '../../services/auth_service.dart';
+import '../../viewmodels/user_viewmodel.dart';
+import '../../models/user_model.dart';
 
 class FarmerHomeView extends StatefulWidget {
   const FarmerHomeView({super.key});
@@ -128,24 +131,32 @@ class _FarmerHomeViewState extends State<FarmerHomeView> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Hello',
-                style: AppTextStyles.h3.copyWith(
-                  color: Colors.white,
-                  fontSize: 24,
-                ),
-              ),
-              Text(
-                'Aruna!',
-                style: AppTextStyles.h3.copyWith(
-                  color: Colors.white,
-                  fontSize: 24,
-                ),
-              ),
-            ],
+          StreamBuilder<UserModel?>(
+            stream: context.read<UserViewModel>().streamCurrentUser(),
+            builder: (context, snapshot) {
+              final user = snapshot.data;
+              final firstName = user?.firstName ?? 'Farmer';
+              
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Hello',
+                    style: AppTextStyles.h3.copyWith(
+                      color: Colors.white,
+                      fontSize: 24,
+                    ),
+                  ),
+                  Text(
+                    '$firstName!',
+                    style: AppTextStyles.h3.copyWith(
+                      color: Colors.white,
+                      fontSize: 24,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const Icon(
             Icons.notifications_outlined,

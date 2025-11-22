@@ -31,20 +31,19 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Image picker packages
-  image_picker: ^1.0.4
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   firebase_core: ^4.2.1
   firebase_auth: ^6.1.2
   cloud_firestore: ^6.0.0
-  firebase_storage: ^13.0.4
   google_maps_flutter: ^2.14.0
   provider: ^6.1.5+1
   geolocator: ^14.0.2
   google_fonts: ^6.3.2
-
+  image_picker: ^1.1.2
+  intl: ^0.19.0
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:
@@ -71,11 +70,19 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
-    - assets/images/fruits/
-    - assets/images/vegetables/
     - assets/icons/
     - assets/images/splash/
     - assets/images/onboarding/
+    - assets/images/buyer/
+    - assets/images/buyer/carousel/
+    - assets/images/buyer/farmers/
+    - assets/images/buyer/fruits/
+    - assets/images/buyer/vegetables/
+    - assets/images/fruits/
+    - assets/images/vegetables/
+    - assets/images/buyer/profile/
+    - assets/images/fruits/
+    - assets/images/vegetables/
 
   # Fonts (bundle exact font files into the app for pixel-consistent typography)
   # Add the TTF files to the `assets/fonts/` folder (not included here).

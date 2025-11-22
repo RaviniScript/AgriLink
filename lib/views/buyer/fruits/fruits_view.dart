@@ -16,3 +16,7 @@ class _FruitsViewState extends State<FruitsView> {
     );
   }
 }
+
+// Function to calculate the sum of numbers in a list
+
+
