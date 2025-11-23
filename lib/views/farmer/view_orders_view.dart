@@ -52,6 +52,16 @@ class _ViewOrdersViewState extends State<ViewOrdersView> {
             return data;
           }).toList();
           
+          // Sort orders by createdAt in memory (newest first)
+          fetchedOrders.sort((a, b) {
+            final aTime = a['createdAt'] as Timestamp?;
+            final bTime = b['createdAt'] as Timestamp?;
+            if (aTime == null && bTime == null) return 0;
+            if (aTime == null) return 1;
+            if (bTime == null) return -1;
+            return bTime.compareTo(aTime); // Descending order (newest first)
+          });
+          
           if (fetchedOrders.isNotEmpty) {
             print('📦 First order: Buyer ${fetchedOrders[0]['buyerName']}, Status ${fetchedOrders[0]['status']}');
           }
@@ -286,16 +296,6 @@ class _ViewOrdersViewState extends State<ViewOrdersView> {
             onTap: () async {
               final originalStatus = order['status']?.toString().toLowerCase();
               
-              // If order is 'new', mark it as 'pending' when farmer views it
-              if (originalStatus == 'new') {
-                try {
-                  // Update in Firebase - the stream will automatically update the UI
-                  await _orderService.updateOrderStatus(order['id'], 'pending');
-                } catch (e) {
-                  print('Error updating order status: $e');
-                }
-              }
-              
               if (mounted) {
                 final result = await Navigator.push(
                   context,
@@ -304,23 +304,51 @@ class _ViewOrdersViewState extends State<ViewOrdersView> {
                   ),
                 );
                 
-                // If order was accepted/rejected, update the local list immediately
-                if (result == true && mounted) {
-                  setState(() {
-                    // Mark this order as just updated to preserve status on next stream update
-                    _justUpdatedOrderId = order['id'];
+                // Handle different scenarios based on result
+                if (mounted) {
+                  // result can be: true (accepted/rejected), false (went back without action), or null
+                  if (result == true) {
+                    // Order was accepted or rejected - status already updated in OrderDetailsView
+                    setState(() {
+                      _justUpdatedOrderId = order['id'];
+                      
+                      final orderIndex = orders.indexWhere((o) => o['id'] == order['id']);
+                      if (orderIndex != -1) {
+                        orders[orderIndex]['status'] = order['status'];
+                      }
+                      
+                      final filteredIndex = filteredOrders.indexWhere((o) => o['id'] == order['id']);
+                      if (filteredIndex != -1) {
+                        filteredOrders[filteredIndex]['status'] = order['status'];
+                      }
+                    });
+                  } else if (originalStatus == 'new') {
+                    // Order was 'new', user viewed it but didn't accept/reject
+                    // Change status to 'pending' (viewed but no action taken)
                     
-                    // Find and update this specific order in both lists
-                    final orderIndex = orders.indexWhere((o) => o['id'] == order['id']);
-                    if (orderIndex != -1) {
-                      orders[orderIndex]['status'] = order['status'];
-                    }
+                    // Update UI immediately first
+                    setState(() {
+                      _justUpdatedOrderId = order['id'];
+                      
+                      final orderIndex = orders.indexWhere((o) => o['id'] == order['id']);
+                      if (orderIndex != -1) {
+                        orders[orderIndex]['status'] = 'pending';
+                      }
+                      
+                      final filteredIndex = filteredOrders.indexWhere((o) => o['id'] == order['id']);
+                      if (filteredIndex != -1) {
+                        filteredOrders[filteredIndex]['status'] = 'pending';
+                      }
+                    });
                     
-                    final filteredIndex = filteredOrders.indexWhere((o) => o['id'] == order['id']);
-                    if (filteredIndex != -1) {
-                      filteredOrders[filteredIndex]['status'] = order['status'];
+                    // Then update in Firebase in background
+                    try {
+                      await _orderService.updateOrderStatus(order['id'], 'pending');
+                    } catch (e) {
+                      print('Error updating order status: $e');
                     }
-                  });
+                  }
+                  // If order was already 'pending', 'accepted', 'rejected', etc. - no change needed
                 }
               }
             },
