@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class DeliveryMapView extends StatefulWidget {
-  const DeliveryMapView({Key? key}) : super(key: key);
+  const DeliveryMapView({super.key});
 
   @override
   State<DeliveryMapView> createState() => _DeliveryMapViewState();

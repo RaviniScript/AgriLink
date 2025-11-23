@@ -53,15 +53,20 @@ class _CheckoutViewState extends State<CheckoutView> {
     setState(() => _isProcessing = true);
 
     try {
+      // Capture total BEFORE clearing cart (since total is a getter)
+      final orderSubtotal = subtotal;
+      final orderDeliveryFee = deliveryFee;
+      final orderTotal = total;
+      
       // Create order
       final orderId = await _orderService.createOrder(
         buyerName: _nameController.text,
         buyerPhone: _phoneController.text,
         deliveryAddress: _addressController.text,
         items: _cartService.items,
-        subtotal: subtotal,
-        deliveryFee: deliveryFee,
-        total: total,
+        subtotal: orderSubtotal,
+        deliveryFee: orderDeliveryFee,
+        total: orderTotal,
         paymentMethod: _paymentMethod,
         notes: _notesController.text,
       );
@@ -71,12 +76,17 @@ class _CheckoutViewState extends State<CheckoutView> {
 
       // Navigate to order confirmation
       if (mounted) {
+        print('🛒 Checkout Summary:');
+        print('   Subtotal: Rs. ${orderSubtotal.toStringAsFixed(2)}');
+        print('   Delivery Fee: Rs. ${orderDeliveryFee.toStringAsFixed(2)}');
+        print('   Total: Rs. ${orderTotal.toStringAsFixed(2)}');
+        
         Navigator.pushReplacementNamed(
           context,
           AppRoutes.orderConfirmation,
           arguments: {
             'orderId': orderId,
-            'total': total,
+            'total': orderTotal,
           },
         );
       }

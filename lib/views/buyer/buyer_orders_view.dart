@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class BuyerOrdersView extends StatefulWidget {
-  const BuyerOrdersView({Key? key}) : super(key: key);
+  const BuyerOrdersView({super.key});
 
   @override
   State<BuyerOrdersView> createState() => _BuyerOrdersViewState();

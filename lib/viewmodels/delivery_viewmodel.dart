@@ -9,7 +9,7 @@ class DeliveryViewModel extends ChangeNotifier {
   final OrderRepository _orderRepository;
 
   List<DeliveryModel> _deliveries = [];
-  List<OrderModel> _orders = [];
+  final List<OrderModel> _orders = [];
   bool _isLoading = false;
   String? _errorMessage;
 

@@ -130,7 +130,15 @@ class _FruitsViewState extends State<FruitsView> {
                             final fruitName = uniqueNames[index];
                             return GestureDetector(
                               onTap: () {
-                                // TODO: Navigate to farmers selling this fruit
+                                // Navigate to farmers selling this fruit
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.productFarmers,
+                                  arguments: {
+                                    'productName': _capitalize(fruitName),
+                                    'category': 'fruits',
+                                  },
+                                );
                               },
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,

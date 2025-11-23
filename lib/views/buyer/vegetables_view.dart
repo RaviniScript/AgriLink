@@ -172,7 +172,10 @@ class _VegetablesViewState extends State<VegetablesView> {
                                 Navigator.pushNamed(
                                   context,
                                   AppRoutes.productFarmers,
-                                  arguments: {'productName': productName},
+                                  arguments: {
+                                    'productName': productName[0].toUpperCase() + productName.substring(1),
+                                    'category': 'vegetables',
+                                  },
                                 );
                               },
                               child: Card(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class DeliveryOrderListView extends StatefulWidget {
-  const DeliveryOrderListView({Key? key}) : super(key: key);
+  const DeliveryOrderListView({super.key});
 
   @override
   State<DeliveryOrderListView> createState() => _DeliveryOrderListViewState();
