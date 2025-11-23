@@ -17,15 +17,21 @@ class OrderService {
     String? notes,
   }) async {
     try {
+      print('🛒 Creating order for buyer: $buyerName');
+      print('🛒 Total items in cart: ${items.length}');
+      
       // Group items by farmer
       final Map<String, List<CartItem>> itemsByFarmer = {};
       for (var item in items) {
         final farmerId = item.product.farmerId;
+        print('   - Product: ${item.product.name}, FarmerId: $farmerId');
         if (!itemsByFarmer.containsKey(farmerId)) {
           itemsByFarmer[farmerId] = [];
         }
         itemsByFarmer[farmerId]!.add(item);
       }
+
+      print('🛒 Grouped into ${itemsByFarmer.length} farmer(s)');
 
       // Create separate orders for each farmer
       final List<String> orderIds = [];
@@ -37,6 +43,8 @@ class OrderService {
           0.0,
           (sum, item) => sum + item.totalPrice,
         );
+        
+        print('📝 Creating order for farmerId: $farmerId');
 
         final orderData = {
           'buyerName': buyerName,
@@ -57,7 +65,7 @@ class OrderService {
           'total': farmerSubtotal + (deliveryFee / itemsByFarmer.length),
           'paymentMethod': paymentMethod,
           'notes': notes ?? '',
-          'status': 'pending', // pending, confirmed, preparing, ready, delivered, cancelled
+          'status': 'new', // new, pending, confirmed, preparing, ready, delivered, cancelled
           'orderDate': FieldValue.serverTimestamp(),
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
@@ -65,8 +73,10 @@ class OrderService {
 
         final docRef = await _firestore.collection(_collection).add(orderData);
         orderIds.add(docRef.id);
+        print('✅ Order created with ID: ${docRef.id} for farmer: $farmerId');
       }
 
+      print('✅ All orders created successfully: ${orderIds.length} order(s)');
       // Return the first order ID (or could return all)
       return orderIds.first;
     } catch (e) {
@@ -99,7 +109,6 @@ class OrderService {
       final snapshot = await _firestore
           .collection(_collection)
           .where('farmerId', isEqualTo: farmerId)
-          .orderBy('orderDate', descending: true)
           .get();
 
       return snapshot.docs.map((doc) {

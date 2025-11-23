@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:agri_link/routes/app_routes.dart';
+import 'package:uuid/uuid.dart';
 
 class PlaceOrderView extends StatefulWidget {
   final String farmerName;
@@ -422,11 +423,20 @@ class _PlaceOrderViewState extends State<PlaceOrderView> {
                   child: ElevatedButton(
                     onPressed: selectedDate != null
                         ? () {
+                            // Generate order ID
+                            final orderId = const Uuid().v4();
+                            
+                            print('🛒 Order Summary:');
+                            print('   Subtotal: Rs. ${subtotal.toStringAsFixed(2)}');
+                            print('   Delivery Charge: Rs. ${deliveryCharge.toStringAsFixed(2)}');
+                            print('   Total: Rs. ${total.toStringAsFixed(2)}');
+                            print('   Products: ${widget.selectedProducts}');
+                            
                             Navigator.pushNamed(
                               context,
                               AppRoutes.orderConfirmation,
                               arguments: {
-                                'farmerName': widget.farmerName,
+                                'orderId': orderId,
                                 'total': total,
                               },
                             );

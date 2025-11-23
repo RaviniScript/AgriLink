@@ -188,23 +188,56 @@ class ProductService {
     }
   }
 
-  // Get products by farmer
+  // Get products by farmer (from both products and crops collections)
   Future<List<ProductModel>> getProductsByFarmer(String farmerId) async {
     try {
-      QuerySnapshot snapshot = await _firestore
+      print('🔍 Fetching all products for farmer: $farmerId');
+      
+      final List<ProductModel> allProducts = [];
+      
+      // 1. Fetch from products collection
+      QuerySnapshot productsSnapshot = await _firestore
           .collection(_collection)
           .where('farmerId', isEqualTo: farmerId)
-          .orderBy('createdAt', descending: true)
           .get();
-
-      return snapshot.docs
-          .map((doc) => ProductModel.fromFirestore(
-                doc.data() as Map<String, dynamic>,
-                doc.id,
-              ))
-          .toList();
+      
+      print('📦 Found ${productsSnapshot.docs.length} products from products collection');
+      
+      for (var doc in productsSnapshot.docs) {
+        allProducts.add(ProductModel.fromFirestore(
+          doc.data() as Map<String, dynamic>,
+          doc.id,
+        ));
+      }
+      
+      // 2. Fetch from crops collection (uses 'ownerId' field, not 'farmerId')
+      QuerySnapshot cropsSnapshot = await _firestore
+          .collection('crops')
+          .where('ownerId', isEqualTo: farmerId)
+          .get();
+      
+      print('🌾 Found ${cropsSnapshot.docs.length} crops from crops collection');
+      
+      // Get farmer details for crop conversion
+      final farmerDoc = await _firestore.collection('users').doc(farmerId).get();
+      final farmerData = farmerDoc.data();
+      final farmerName = farmerData?['name'] ?? 'Unknown';
+      final farmerLocation = farmerData?['location'] ?? 'Unknown';
+      
+      for (var doc in cropsSnapshot.docs) {
+        final crop = CropModel.fromDocument(doc);
+        
+        print('🌱 Processing crop: ${crop.name}, category: ${crop.category}');
+        
+        // Convert CropModel to ProductModel
+        final product = ProductModel.fromCrop(crop, farmerName: farmerName, farmerLocation: farmerLocation);
+        allProducts.add(product);
+      }
+      
+      print('✅ Total products found for farmer: ${allProducts.length}');
+      return allProducts;
     } catch (e) {
-      print('Error fetching products by farmer: $e');
+      print('❌ Error fetching products by farmer: $e');
       return [];
     }
   }
