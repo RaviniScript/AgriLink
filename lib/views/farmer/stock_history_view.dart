@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import '../../core/constants/app_themes.dart';
+import '../../repository/stock_history_repository.dart';
+import '../../models/stock_history_model.dart';
 
 class StockHistoryView extends StatefulWidget {
   const StockHistoryView({Key? key}) : super(key: key);
@@ -10,55 +14,11 @@ class StockHistoryView extends StatefulWidget {
 
 class _StockHistoryViewState extends State<StockHistoryView> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final StockHistoryRepository _stockRepo = StockHistoryRepository();
 
-  // TODO: This will be populated from your backend
-  List<Map<String, dynamic>> vegetables = [
-    {
-      'name': '',
-      'imageUrl': '',
-      'initial': '',
-      'sold': '',
-      'remaining': '',
-      'updated': '',
-    },
-    {
-      'name': '',
-      'imageUrl': '',
-      'initial': '',
-      'sold': '',
-      'remaining': '',
-      'updated': '',
-    },
-    {
-      'name': '',
-      'imageUrl': '',
-      'initial': '',
-      'sold': '',
-      'remaining': '',
-      'updated': '',
-    },
-  ];
-
-  List<Map<String, dynamic>> fruits = [
-    {
-      'name': '',
-      'imageUrl': '',
-      'initial': '',
-      'sold': '',
-      'remaining': '',
-      'updated': '',
-    },
-    {
-      'name': '',
-      'imageUrl': '',
-      'initial': '',
-      'sold': '',
-      'remaining': '',
-      'updated': '',
-    },
-  ];
-
-  bool isLoading = false;
+  List<StockHistoryModel> vegetables = [];
+  List<StockHistoryModel> fruits = [];
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -67,23 +27,46 @@ class _StockHistoryViewState extends State<StockHistoryView> with SingleTickerPr
     _tabController.addListener(() {
       setState(() {}); // Rebuild to update button states
     });
-    // TODO: Call your backend API here to fetch stock data
-    // _loadStockFromBackend();
+    _loadStockFromBackend();
   }
 
-  // TODO: Implement this method to fetch data from your backend
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload stock when returning to this view
+    _loadStockFromBackend();
+  }
+
   Future<void> _loadStockFromBackend() async {
     setState(() => isLoading = true);
 
-    // Example:
-    // final response = await YourBackendService.getStock();
-    // setState(() {
-    //   vegetables = response['vegetables'];
-    //   fruits = response['fruits'];
-    //   isLoading = false;
-    // });
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        print('❌ No user logged in');
+        setState(() => isLoading = false);
+        return;
+      }
 
-    setState(() => isLoading = false);
+      print('📦 Loading stock history for farmer: ${currentUser.uid}');
+
+      // Load vegetables
+      final vegList = await _stockRepo.getFarmerStockByCategory(currentUser.uid, 'Vegetables');
+      print('   ✅ Loaded ${vegList.length} vegetables');
+
+      // Load fruits
+      final fruitList = await _stockRepo.getFarmerStockByCategory(currentUser.uid, 'Fruits');
+      print('   ✅ Loaded ${fruitList.length} fruits');
+
+      setState(() {
+        vegetables = vegList;
+        fruits = fruitList;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Error loading stock: $e');
+      setState(() => isLoading = false);
+    }
   }
 
   @override
@@ -105,8 +88,16 @@ class _StockHistoryViewState extends State<StockHistoryView> with SingleTickerPr
                 : TabBarView(
               controller: _tabController,
               children: [
-                _buildStockList(vegetables),
-                _buildStockList(fruits),
+                RefreshIndicator(
+                  onRefresh: _loadStockFromBackend,
+                  color: AppColors.primary,
+                  child: _buildStockList(vegetables),
+                ),
+                RefreshIndicator(
+                  onRefresh: _loadStockFromBackend,
+                  color: AppColors.primary,
+                  child: _buildStockList(fruits),
+                ),
               ],
             ),
           ),
@@ -232,19 +223,51 @@ class _StockHistoryViewState extends State<StockHistoryView> with SingleTickerPr
     );
   }
 
-  Widget _buildStockList(List<Map<String, dynamic>> items) {
+  Widget _buildStockList(List<StockHistoryModel> items) {
+    if (items.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.inventory_2_outlined,
+              size: 80,
+              color: Colors.grey[300],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No stock history yet',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Add products to see stock history',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
         return StockCard(
-          name: item['name']?.isEmpty ?? true ? 'Item Name' : item['name']!,
-          imageUrl: item['imageUrl'] ?? '',
-          initial: item['initial']?.isEmpty ?? true ? '0 kg' : item['initial']!,
-          sold: item['sold']?.isEmpty ?? true ? '0 kg' : item['sold']!,
-          remaining: item['remaining']?.isEmpty ?? true ? '0 kg' : item['remaining']!,
-          updated: item['updated']?.isEmpty ?? true ? 'Not updated' : item['updated']!,
+          name: item.productName,
+          imageUrl: item.imageUrl,
+          initial: '${item.initialStock} ${item.unit}',
+          sold: '${item.soldQuantity} ${item.unit}',
+          remaining: '${item.remainingStock} ${item.unit}',
+          updated: DateFormat('MMM dd, yyyy hh:mm a').format(item.updatedAt),
         );
       },
     );

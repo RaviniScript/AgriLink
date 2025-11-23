@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agri_link/models/cart_item_model.dart';
+import '../repository/stock_history_repository.dart';
 
 class OrderService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'orders';
+  final StockHistoryRepository _stockHistoryRepo = StockHistoryRepository();
 
   Future<String> createOrder({
     required String buyerName,
@@ -143,6 +145,22 @@ class OrderService {
         'status': status,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // If order is accepted, update stock
+      if (status == 'accepted') {
+        print('📦 Order accepted, updating stock...');
+        final orderData = await getOrderById(orderId);
+        if (orderData != null) {
+          final farmerId = orderData['farmerId'] as String;
+          final items = orderData['items'] as List<dynamic>;
+          
+          await _stockHistoryRepo.updateStockOnOrderAccepted(
+            orderId: orderId,
+            farmerId: farmerId,
+            orderItems: items.cast<Map<String, dynamic>>(),
+          );
+        }
+      }
     } catch (e) {
       print('Error updating order status: $e');
       rethrow;
@@ -153,7 +171,6 @@ class OrderService {
     return _firestore
         .collection(_collection)
         .where('buyerPhone', isEqualTo: buyerPhone)
-        .orderBy('createdAt', descending: true)
         .snapshots();
   }
 
@@ -161,7 +178,6 @@ class OrderService {
     return _firestore
         .collection(_collection)
         .where('farmerId', isEqualTo: farmerId)
-        .orderBy('createdAt', descending: true)
         .snapshots();
   }
 }

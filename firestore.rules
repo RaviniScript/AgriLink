@@ -18,5 +18,16 @@ service cloud.firestore {
       allow read, write: if request.auth != null && resource.data.userId == request.auth.uid;
       allow create: if request.auth != null;
     }
+    
+    // Stock history collection - farmers can read/write their own stock history
+    match /stock_history/{historyId} {
+      allow read, write: if request.auth != null && resource.data.farmerId == request.auth.uid;
+      allow create: if request.auth != null;
+    }
+    
+    // Orders collection - authenticated users can read/write orders
+    match /orders/{orderId} {
+      allow read, write: if request.auth != null;
+    }
   }
 }

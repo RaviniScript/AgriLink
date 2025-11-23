@@ -81,7 +81,7 @@ class _OrderDetailsViewState extends State<OrderDetailsView> {
                     color: AppColors.primary,
                   ),
                 ),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(context, false), // Return false when going back without action
               ),
               const Expanded(
                 child: Text(
