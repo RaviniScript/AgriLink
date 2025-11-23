@@ -1,95 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:agri_link/core/constants/app_themes.dart';
-
-import 'package:flutter/material.dart';
-import 'package:agri_link/core/constants/app_themes.dart';
 import 'package:agri_link/routes/app_routes.dart';
 import 'package:agri_link/services/product_service.dart';
 import 'package:agri_link/models/product_model.dart';
 
-class VegetablesView extends StatefulWidget {
-  const VegetablesView({Key? key}) : super(key: key);
+class BestSellingView extends StatefulWidget {
+  const BestSellingView({Key? key}) : super(key: key);
 
   @override
-  State<VegetablesView> createState() => _VegetablesViewState();
+  State<BestSellingView> createState() => _BestSellingViewState();
 }
 
-class _VegetablesViewState extends State<VegetablesView> {
+class _BestSellingViewState extends State<BestSellingView> {
   final ProductService _productService = ProductService();
-  final TextEditingController _searchController = TextEditingController();
   List<ProductModel> _products = [];
-  List<ProductModel> _filteredProducts = [];
   bool _isLoading = true;
-
-  // Local asset images mapping
-  final Map<String, String> _productImages = {
-    'pumpkin': 'assets/images/vegetables/pumpkin-season-australia.webp',
-    'carrot': 'assets/images/vegetables/carrot.webp',
-    'broccoli': 'assets/images/vegetables/broccoli.jpg',
-    'capsicum': 'assets/images/vegetables/capsicum.jpg',
-    'cabbage': 'assets/images/vegetables/cabbage.webp',
-    'leeks': 'assets/images/vegetables/leeks.webp',
-    'ladies finger': 'assets/images/vegetables/ladies.png',
-    'bitter gourd': 'assets/images/vegetables/bitter gourd.webp',
-  };
-
-  String _getProductImage(String productName) {
-    final key = productName.toLowerCase();
-    return _productImages[key] ?? 'assets/images/vegetables/carrot.webp';
-  }
-
-  List<String> _getUniqueProductNames(List<ProductModel> products) {
-    final names = <String>{};
-    for (var p in products) {
-      names.add(p.name.toLowerCase());
-    }
-    return names.toList();
-  }
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_filterProducts);
-    _loadVegetables();
+    _loadBestSellingProducts();
   }
 
-  @override
-  void dispose() {
-    _searchController.removeListener(_filterProducts);
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _filterProducts() {
-    final query = _searchController.text.toLowerCase().trim();
-    setState(() {
-      if (query.isEmpty) {
-        _filteredProducts = _products;
-      } else {
-        _filteredProducts = _products.where((product) {
-          return product.name.toLowerCase().contains(query);
-        }).toList();
-      }
-    });
-  }
-
-  Future<void> _loadVegetables() async {
+  Future<void> _loadBestSellingProducts() async {
     setState(() => _isLoading = true);
     try {
-      final products = await _productService.getProductsByCategory('vegetables');
+      final products = await _productService.getBestSellingProducts(limit: 50);
       setState(() {
         _products = products;
-        _filteredProducts = products;
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading vegetables: $e');
+      print('Error loading best selling products: $e');
       setState(() => _isLoading = false);
     }
   }
 
+  // Get unique product names with their first product as representative
+  Map<String, ProductModel> _getUniqueProducts() {
+    Map<String, ProductModel> uniqueProducts = {};
+    for (var product in _products) {
+      final productName = product.name.toLowerCase();
+      if (!uniqueProducts.containsKey(productName)) {
+        uniqueProducts[productName] = product;
+      }
+    }
+    return uniqueProducts;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final uniqueProducts = _getUniqueProducts();
+    
     return Scaffold(
       backgroundColor: AppThemes.backgroundCream,
       appBar: AppBar(
@@ -99,28 +61,12 @@ class _VegetablesViewState extends State<VegetablesView> {
           padding: const EdgeInsets.all(8.0),
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFD9F0DD),
+              color: const Color(0xFFE8F5E9),
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new, color: AppThemes.primaryGreen, size: 20),
               onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-        ),
-        title: Container(
-          height: 45,
-          decoration: BoxDecoration(
-            color: const Color(0xFFD9D9D9),
-            borderRadius: BorderRadius.circular(25),
-          ),
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Find Your Needs',
-              suffixIcon: Icon(Icons.search, color: Colors.grey[600]),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
           ),
         ),
@@ -140,8 +86,8 @@ class _VegetablesViewState extends State<VegetablesView> {
               ),
             ),
             padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'Vegetables',
+            child: const Text(
+              'Best Selling Products',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.w400,
@@ -152,8 +98,8 @@ class _VegetablesViewState extends State<VegetablesView> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _filteredProducts.isEmpty
-                    ? Center(child: Text(_searchController.text.isEmpty ? 'No vegetables available' : 'No vegetables found matching "${_searchController.text}"'))
+                : uniqueProducts.isEmpty
+                    ? const Center(child: Text('No products available'))
                     : Padding(
                         padding: const EdgeInsets.all(12.0),
                         child: GridView.builder(
@@ -163,19 +109,18 @@ class _VegetablesViewState extends State<VegetablesView> {
                             mainAxisSpacing: 12,
                             childAspectRatio: 0.95,
                           ),
-                          itemCount: _getUniqueProductNames(_filteredProducts).length,
+                          itemCount: uniqueProducts.length,
                           itemBuilder: (context, index) {
-                            final uniqueNames = _getUniqueProductNames(_filteredProducts);
-                            final productName = uniqueNames[index];
-                            final imagePath = _getProductImage(productName);
+                            final productName = uniqueProducts.keys.elementAt(index);
+                            final product = uniqueProducts[productName]!;
                             return GestureDetector(
                               onTap: () {
                                 Navigator.pushNamed(
                                   context,
                                   AppRoutes.productFarmers,
                                   arguments: {
-                                    'productName': productName[0].toUpperCase() + productName.substring(1),
-                                    'category': 'vegetables',
+                                    'productName': product.name,
+                                    'category': product.category,
                                   },
                                 );
                               },
@@ -185,8 +130,8 @@ class _VegetablesViewState extends State<VegetablesView> {
                                   Expanded(
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(12),
-                                      child: Image.asset(
-                                        imagePath,
+                                      child: Image.network(
+                                        product.imageUrl,
                                         fit: BoxFit.cover,
                                         errorBuilder: (c, e, s) => Container(
                                           color: Colors.grey[200],
@@ -203,7 +148,7 @@ class _VegetablesViewState extends State<VegetablesView> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
-                                      productName[0].toUpperCase() + productName.substring(1),
+                                      product.name,
                                       textAlign: TextAlign.center,
                                       style: const TextStyle(
                                         color: Colors.white,
@@ -226,4 +171,3 @@ class _VegetablesViewState extends State<VegetablesView> {
     );
   }
 }
-// (trailing corrupted code removed)

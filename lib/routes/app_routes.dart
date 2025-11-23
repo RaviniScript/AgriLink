@@ -73,6 +73,7 @@ class AppRoutes {
   static const String cart = '/cart';
   static const String buyerOrders = '/buyerOrders';
   static const String favorites = '/favorites';
+  static const String bestSelling = '/bestSelling';
   
   // Delivery
   static const String deliveryHome = '/deliveryHome';

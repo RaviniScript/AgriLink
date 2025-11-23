@@ -117,44 +117,162 @@ class ProductService {
     }
   }
 
-  // Get best selling products (highest rated or most reviewed)
+  // Get best selling products based on order frequency
   Future<List<ProductModel>> getBestSellingProducts({int limit = 10}) async {
     try {
-      QuerySnapshot snapshot = await _firestore
-          .collection(_collection)
-          .where('isAvailable', isEqualTo: true)
-          .orderBy('rating', descending: true)
-          .limit(limit)
-          .get();
+      // Get all orders to count product purchases
+      final ordersSnapshot = await _firestore.collection('orders').get();
+      
+      // Count occurrences of each product
+      Map<String, int> productOrderCounts = {};
+      Map<String, String> productNames = {}; // Store product names
+      
+      for (var orderDoc in ordersSnapshot.docs) {
+        final orderData = orderDoc.data();
+        final items = orderData['items'] as List<dynamic>?;
+        
+        if (items != null) {
+          for (var item in items) {
+            final productId = item['productId'] as String?;
+            final productName = item['productName'] as String?;
+            final quantity = (item['quantity'] as num?)?.toInt() ?? 1;
+            
+            if (productId != null && productName != null) {
+              productOrderCounts[productName] = (productOrderCounts[productName] ?? 0) + quantity;
+              productNames[productName] = productName;
+            }
+          }
+        }
+      }
+      
+      // Sort products by order count
+      final sortedProducts = productOrderCounts.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+      
+      // Get actual product details for top products
+      List<ProductModel> bestSelling = [];
+      
+      for (var entry in sortedProducts.take(limit)) {
+        final productName = entry.key;
+        
+        // Try to find in products collection first
+        final productsQuery = await _firestore
+            .collection(_collection)
+            .where('name', isEqualTo: productName)
+            .where('isAvailable', isEqualTo: true)
+            .limit(1)
+            .get();
+        
+        if (productsQuery.docs.isNotEmpty) {
+          final doc = productsQuery.docs.first;
+          bestSelling.add(ProductModel.fromFirestore(
+            doc.data(),
+            doc.id,
+          ));
+        } else {
+          // Try crops collection
+          final cropsQuery = await _firestore
+              .collection(_cropsCollection)
+              .where('name', isEqualTo: productName)
+              .limit(1)
+              .get();
+          
+          if (cropsQuery.docs.isNotEmpty) {
+            final doc = cropsQuery.docs.first;
+            final crop = CropModel.fromDocument(doc);
+            
+            // Fetch farmer name
+            final farmerDoc = await _firestore.collection('users').doc(crop.ownerId).get();
+            final farmerData = farmerDoc.data();
+            final farmerName = farmerData?['firstName'] ?? 'Unknown';
+            
+            bestSelling.add(ProductModel.fromCrop(
+              crop,
+              farmerName: farmerName,
+              farmerLocation: crop.city,
+            ));
+          }
+        }
+      }
+      
+      // If no orders yet, fallback to newest products
+      if (bestSelling.isEmpty) {
+        final snapshot = await _firestore
+            .collection(_collection)
+            .where('isAvailable', isEqualTo: true)
+            .orderBy('createdAt', descending: true)
+            .limit(limit)
+            .get();
 
-      return snapshot.docs
-          .map((doc) => ProductModel.fromFirestore(
-                doc.data() as Map<String, dynamic>,
-                doc.id,
-              ))
-          .toList();
+        bestSelling = snapshot.docs
+            .map((doc) => ProductModel.fromFirestore(
+                  doc.data(),
+                  doc.id,
+                ))
+            .toList();
+      }
+      
+      return bestSelling;
     } catch (e) {
       print('Error fetching best selling products: $e');
-      return [];
+      // Fallback to newest products
+      try {
+        final snapshot = await _firestore
+            .collection(_collection)
+            .where('isAvailable', isEqualTo: true)
+            .orderBy('createdAt', descending: true)
+            .limit(limit)
+            .get();
+
+        return snapshot.docs
+            .map((doc) => ProductModel.fromFirestore(
+                  doc.data(),
+                  doc.id,
+                ))
+            .toList();
+      } catch (fallbackError) {
+        print('Error in fallback: $fallbackError');
+        return [];
+      }
     }
   }
 
   // Search products by name
   Future<List<ProductModel>> searchProducts(String query) async {
     try {
-      // Get all available products and filter on client side
-      // This avoids needing additional Firebase composite indexes
-      QuerySnapshot snapshot = await _firestore
+      List<ProductModel> allProducts = [];
+      
+      // Search in products collection
+      QuerySnapshot productsSnapshot = await _firestore
           .collection(_collection)
           .where('isAvailable', isEqualTo: true)
           .get();
 
-      final allProducts = snapshot.docs
+      allProducts.addAll(productsSnapshot.docs
           .map((doc) => ProductModel.fromFirestore(
                 doc.data() as Map<String, dynamic>,
                 doc.id,
               ))
-          .toList();
+          .toList());
+      
+      // Search in crops collection
+      QuerySnapshot cropsSnapshot = await _firestore
+          .collection(_cropsCollection)
+          .get();
+      
+      for (var doc in cropsSnapshot.docs) {
+        final crop = CropModel.fromDocument(doc);
+        // Fetch farmer name from users collection
+        final farmerDoc = await _firestore.collection('users').doc(crop.ownerId).get();
+        final farmerData = farmerDoc.data();
+        final farmerName = farmerData?['firstName'] ?? 'Unknown';
+        
+        allProducts.add(ProductModel.fromCrop(
+          crop,
+          farmerName: farmerName,
+          farmerLocation: crop.city,
+        ));
+      }
 
       // Filter products by name (case-insensitive)
       final searchTerm = query.toLowerCase();

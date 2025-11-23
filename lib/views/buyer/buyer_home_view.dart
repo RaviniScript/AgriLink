@@ -26,6 +26,7 @@ class _BuyerHomeViewState extends State<BuyerHomeView> {
   int _currentNavIndex = 0;
   int _carouselIndex = 0;
   final PageController _carouselController = PageController();
+  final TextEditingController _searchController = TextEditingController();
   Timer? _carouselTimer;
   
   final ProductService _productService = ProductService();
@@ -176,6 +177,7 @@ class _BuyerHomeViewState extends State<BuyerHomeView> {
   void dispose() {
     _carouselTimer?.cancel();
     _carouselController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -263,6 +265,7 @@ class _BuyerHomeViewState extends State<BuyerHomeView> {
                         borderRadius: BorderRadius.circular(25),
                       ),
                       child: TextField(
+                        controller: _searchController,
                         onSubmitted: (value) {
                           if (value.trim().isNotEmpty) {
                             Navigator.pushNamed(
@@ -274,7 +277,19 @@ class _BuyerHomeViewState extends State<BuyerHomeView> {
                         },
                         decoration: InputDecoration(
                           hintText: 'Find Your Needs',
-                          suffixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                          suffixIcon: IconButton(
+                            icon: Icon(Icons.search, color: Colors.grey[600]),
+                            onPressed: () {
+                              final query = _searchController.text.trim();
+                              if (query.isNotEmpty) {
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.searchResults,
+                                  arguments: {'query': query},
+                                );
+                              }
+                            },
+                          ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         ),
@@ -529,8 +544,7 @@ class _BuyerHomeViewState extends State<BuyerHomeView> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        // TODO: Navigate to full products catalog
-                        Navigator.of(context).pushNamed(AppRoutes.vegetables);
+                        Navigator.of(context).pushNamed(AppRoutes.bestSelling);
                       },
                       child: Text(
                         'View All',

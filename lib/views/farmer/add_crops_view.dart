@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/constants/app_themes.dart';
 import '../../viewmodels/crop_viewmodel.dart';
+import '../../services/market_price_service.dart';
 
 class AddCropsView extends StatefulWidget {
   const AddCropsView({Key? key}) : super(key: key);
@@ -22,10 +23,114 @@ class _AddCropsViewState extends State<AddCropsView> {
   final TextEditingController _quantityController = TextEditingController(text: '100');
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
+  final MarketPriceService _marketPriceService = MarketPriceService();
+
+  double? _fairPrice;
+  bool _loadingFairPrice = false;
+  String? _fairPriceError;
 
   final List<String> _categories = ['vegetables', 'fruits']; // Match buyer categories
   final List<String> _units = ['kg', 'g'];
   final int maxImages = 5; // Maximum 5 images allowed
+
+  @override
+  void initState() {
+    super.initState();
+    print('🚀 AddCropsView initState called');
+    // Listen to crop name changes to fetch fair price
+    _cropNameController.addListener(_onCropNameChanged);
+    // Listen to amount changes for real-time validation
+    _amountController.addListener(_validatePrice);
+    
+    // Check if crop name field already has text (when page loads)
+    if (_cropNameController.text.trim().isNotEmpty) {
+      print('🔍 Initial crop name found: "${_cropNameController.text.trim()}"');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _onCropNameChanged();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _cropNameController.removeListener(_onCropNameChanged);
+    _amountController.removeListener(_validatePrice);
+    _cropNameController.dispose();
+    _quantityController.dispose();
+    _amountController.dispose();
+    _cityController.dispose();
+    super.dispose();
+  }
+
+  void _validatePrice() {
+    if (_fairPrice != null && _amountController.text.isNotEmpty) {
+      final enteredPrice = double.tryParse(_amountController.text);
+      if (enteredPrice != null && enteredPrice > _fairPrice!) {
+        // Just trigger rebuild to show warning
+        setState(() {});
+      }
+    }
+  }
+
+  void _onCropNameChanged() {
+    final cropName = _cropNameController.text.trim();
+    print('📝 Crop name changed: "$cropName" (length: ${cropName.length})');
+    
+    if (cropName.length >= 3) {
+      print('✅ Crop name >= 3 chars, loading fair price...');
+      // Load fair price immediately for testing
+      _loadFairPrice(cropName);
+    } else {
+      print('❌ Crop name < 3 chars, clearing fair price');
+      setState(() {
+        _fairPrice = null;
+        _fairPriceError = null;
+        _loadingFairPrice = false;
+      });
+    }
+  }
+
+  Future<void> _loadFairPrice(String cropName) async {
+    print('🔄 _loadFairPrice called for: "$cropName"');
+    
+    setState(() {
+      _loadingFairPrice = true;
+      _fairPriceError = null;
+    });
+
+    try {
+      print('🌐 Calling market price service...');
+      final marketData = await _marketPriceService.getMarketPrice(cropName);
+      print('📦 Market data received: $marketData');
+      
+      if (marketData != null) {
+        final fairPrice = (marketData['fair_price'] as num?)?.toDouble();
+        print('💰 Fair price extracted: Rs $fairPrice');
+        
+        setState(() {
+          _fairPrice = fairPrice;
+          _loadingFairPrice = false;
+          // Auto-populate the price field with fair price
+          if (fairPrice != null && _amountController.text.isEmpty) {
+            print('✏️ Auto-filling price field with Rs $fairPrice');
+            _amountController.text = fairPrice.toStringAsFixed(2);
+          }
+        });
+        print('✅ State updated - _fairPrice = $_fairPrice, _loadingFairPrice = $_loadingFairPrice');
+      } else {
+        setState(() {
+          _fairPrice = null;
+          _loadingFairPrice = false;
+          _fairPriceError = 'No market price set for this crop';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _loadingFairPrice = false;
+        _fairPriceError = 'Error loading price';
+      });
+    }
+  }
 
   Future<void> _pickImageFromCamera() async {
     if (_selectedImages.length >= maxImages) {
@@ -157,6 +262,20 @@ class _AddCropsViewState extends State<AddCropsView> {
       _showMessage('Please enter city');
       return;
     }
+
+    // Validate price against fair price
+    final enteredPrice = double.tryParse(_amountController.text) ?? 0.0;
+    print('🔍 Validating price: Entered=$enteredPrice, Fair=$_fairPrice');
+    
+    if (_fairPrice != null && enteredPrice > _fairPrice!) {
+      print('❌ Price validation FAILED: $enteredPrice > $_fairPrice');
+      _showMessage(
+        'Price Rs ${enteredPrice.toStringAsFixed(2)} exceeds fair price Rs ${_fairPrice!.toStringAsFixed(2)}. Please adjust your price.',
+      );
+      return;
+    }
+    
+    print('✅ Price validation PASSED or no fair price set');
 
     setState(() {
       _isLoading = true;
@@ -439,7 +558,25 @@ class _AddCropsViewState extends State<AddCropsView> {
                     const Text('Crop Name',
                         style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
-                    _buildTextFieldForName(_cropNameController, hint: 'Enter crop name'),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F0F0),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: TextField(
+                        controller: _cropNameController,
+                        keyboardType: TextInputType.text,
+                        textCapitalization: TextCapitalization.words,
+                        onChanged: (value) {
+                          _onCropNameChanged();
+                        },
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          hintText: 'Enter crop name',
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 20),
 
                     // CITY
@@ -473,6 +610,125 @@ class _AddCropsViewState extends State<AddCropsView> {
                         Expanded(child: _buildTextField(_amountController, hint: "Per 1$_selectedUnit")),
                       ],
                     ),
+                    
+                    // Fair Price Information
+                    if (_loadingFairPrice)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          children: [
+                            const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Loading market price...',
+                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      ),
+                    
+                    if (_fairPrice != null && !_loadingFairPrice)
+                      Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.info_outline, size: 16, color: AppColors.primary),
+                                const SizedBox(width: 6),
+                                const Text(
+                                  'Market Fair Price',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Rs ${_fairPrice!.toStringAsFixed(2)} per $_selectedUnit',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Your price should not exceed this amount',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    
+                    // Show warning if price exceeds fair price
+                    if (_fairPrice != null && _amountController.text.isNotEmpty)
+                      Builder(
+                        builder: (context) {
+                          final enteredPrice = double.tryParse(_amountController.text);
+                          if (enteredPrice != null && enteredPrice > _fairPrice!) {
+                            return Container(
+                              margin: const EdgeInsets.only(top: 8),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.red[50],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.red[300]!),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.error_outline, size: 18, color: Colors.red[700]),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Price Rs ${enteredPrice.toStringAsFixed(2)} exceeds fair price! Maximum allowed: Rs ${_fairPrice!.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.red[700],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    
+                    if (_fairPriceError != null && !_loadingFairPrice && _fairPrice == null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          children: [
+                            Icon(Icons.warning_amber_rounded, size: 16, color: Colors.orange[700]),
+                            const SizedBox(width: 6),
+                            Text(
+                              _fairPriceError!,
+                              style: TextStyle(fontSize: 11, color: Colors.orange[700]),
+                            ),
+                          ],
+                        ),
+                      ),
+                    
                     const SizedBox(height: 40),
 
                     // ---------------- BUTTONS (UPDATED WITH AppThemes) ----------------
@@ -639,14 +895,5 @@ class _AddCropsViewState extends State<AddCropsView> {
         style: AppTextStyles.button,
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _cropNameController.dispose();
-    _quantityController.dispose();
-    _amountController.dispose();
-    _cityController.dispose();
-    super.dispose();
   }
 }

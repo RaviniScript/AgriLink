@@ -28,6 +28,7 @@ import 'package:agri_link/views/buyer/product_detail_view.dart';
 import 'package:agri_link/views/buyer/checkout_view.dart';
 import 'package:agri_link/views/buyer/order_history_view.dart';
 import 'package:agri_link/views/buyer/favorites_view.dart';
+import 'package:agri_link/views/buyer/best_selling_view.dart';
 import 'package:agri_link/views/delivery/delivery_home_view.dart';
 
 class RouteGenerator {
@@ -104,6 +105,8 @@ class RouteGenerator {
         );
       case AppRoutes.favorites:
         return MaterialPageRoute(builder: (_) => const FavoritesView());
+      case AppRoutes.bestSelling:
+        return MaterialPageRoute(builder: (_) => const BestSellingView());
       case AppRoutes.productFarmers:
         final productFarmersArgs = settings.arguments as Map<String, dynamic>;
         return MaterialPageRoute(

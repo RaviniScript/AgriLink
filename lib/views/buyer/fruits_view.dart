@@ -15,6 +15,7 @@ class _FruitsViewState extends State<FruitsView> {
   final ProductService _productService = ProductService();
   final TextEditingController _searchController = TextEditingController();
   List<ProductModel> _products = [];
+  List<ProductModel> _filteredProducts = [];
   bool _isLoading = true;
 
   // Map fruit names to asset images
@@ -38,7 +39,28 @@ class _FruitsViewState extends State<FruitsView> {
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_filterProducts);
     _loadFruits();
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_filterProducts);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterProducts() {
+    final query = _searchController.text.toLowerCase().trim();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredProducts = _products;
+      } else {
+        _filteredProducts = _products.where((product) {
+          return product.name.toLowerCase().contains(query);
+        }).toList();
+      }
+    });
   }
 
   Future<void> _loadFruits() async {
@@ -46,13 +68,14 @@ class _FruitsViewState extends State<FruitsView> {
     final products = await _productService.getProductsByCategory('fruits');
     setState(() {
       _products = products;
+      _filteredProducts = products;
       _isLoading = false;
     });
   }
 
   List<String> _getUniqueFruitNames() {
     final names = <String>{};
-    for (var p in _products) {
+    for (var p in _filteredProducts) {
       names.add(p.name.toLowerCase());
     }
     return names.toList();
@@ -66,9 +89,18 @@ class _FruitsViewState extends State<FruitsView> {
       appBar: AppBar(
         backgroundColor: AppThemes.backgroundCream,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F5E9),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, color: AppThemes.primaryGreen, size: 20),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
         ),
         title: Container(
           height: 45,
@@ -115,7 +147,7 @@ class _FruitsViewState extends State<FruitsView> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : uniqueNames.isEmpty
-                    ? const Center(child: Text('No fruits available'))
+                    ? Center(child: Text(_searchController.text.isEmpty ? 'No fruits available' : 'No fruits found matching "${_searchController.text}"'))
                     : Padding(
                         padding: const EdgeInsets.all(12.0),
                         child: GridView.builder(
@@ -128,6 +160,7 @@ class _FruitsViewState extends State<FruitsView> {
                           itemCount: uniqueNames.length,
                           itemBuilder: (context, index) {
                             final fruitName = uniqueNames[index];
+                            final imagePath = _getFruitImage(fruitName);
                             return GestureDetector(
                               onTap: () {
                                 // Navigate to farmers selling this fruit
@@ -147,7 +180,7 @@ class _FruitsViewState extends State<FruitsView> {
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(12),
                                       child: Image.asset(
-                                        _getFruitImage(fruitName),
+                                        imagePath,
                                         fit: BoxFit.cover,
                                         errorBuilder: (c, e, s) => Container(
                                           color: Colors.grey[200],

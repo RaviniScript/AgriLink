@@ -351,12 +351,6 @@ class _ViewOrdersViewState extends State<ViewOrdersView> {
         return 'Pending';
     }
   }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
 }
 
 class OrderCard extends StatelessWidget {
