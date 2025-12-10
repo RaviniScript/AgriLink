@@ -81,8 +81,11 @@ flutter:
     - assets/images/fruits/
     - assets/images/vegetables/
     - assets/images/buyer/profile/
+    - assets/images/buyer/farmers/
+    - assets/images/buyer/profile/
     - assets/images/fruits/
     - assets/images/vegetables/
+    - assets/images/delivery/
 
   # Fonts (bundle exact font files into the app for pixel-consistent typography)
   # Add the TTF files to the `assets/fonts/` folder (not included here).

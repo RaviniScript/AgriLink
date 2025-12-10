@@ -112,6 +112,11 @@ class ProductModel {
     );
   }
 
+  factory ProductModel.fromDocument(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    return ProductModel.fromFirestore(data, doc.id);
+  }
+
   // Convert to Firestore document
   Map<String, dynamic> toFirestore() {
     return {

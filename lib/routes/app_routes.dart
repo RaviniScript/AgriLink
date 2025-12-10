@@ -76,6 +76,7 @@ class AppRoutes {
   
   // Delivery
   static const String deliveryHome = '/deliveryHome';
-  static const String deliveryOrderList = '/deliveryOrderList';
-  static const String deliveryMap = '/deliveryMap';
+  static const String deliveryRides = '/delivery-rides';
+  static const String deliveryProfile = '/delivery-profile';
+  static const String deliverySettings = '/delivery-settings';
 }

@@ -37,9 +37,10 @@ class MyApp extends StatelessWidget {
         title: 'AgriLink App',
         theme: AppThemes.lightTheme,
         debugShowCheckedModeBanner: false,
-        initialRoute: AppRoutes.splash,
+        initialRoute: AppRoutes.deliveryHome,
         routes: AppRoutes.routes,
         onGenerateRoute: RouteGenerator.generateRoute,
+        onUnknownRoute: RouteGenerator.onUnknownRoute,
       ),
     );
   }
